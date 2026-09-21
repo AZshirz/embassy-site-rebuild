@@ -19,6 +19,12 @@ for (const [name, vp] of Object.entries(viewports)) {
   await page.setViewport(vp);
   for (const path of pages) {
     await page.goto(base + path, { waitUntil: 'networkidle0' });
+    // Scroll through the page so lazy-loaded images are fetched before the full-page capture.
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 600) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 60)); }
+      window.scrollTo(0, 0);
+    });
+    await page.waitForNetworkIdle({ idleTime: 300 });
     const file = `${out}/${name}-${path === '/' ? 'home' : path.replace(/\//g, '-').replace(/^-|-$/g, '')}.png`;
     await page.screenshot({ path: file, fullPage: true });
     console.log('saved', file);

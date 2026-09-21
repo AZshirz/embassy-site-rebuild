@@ -1,0 +1,21 @@
+---
+// Site-wide alert strip (travel advisory level, worldwide caution). Uses the USWDS "site alert"
+// pattern in its slim, heading-less form so it never disturbs the page's heading outline.
+import type { Lang } from '../data/content';
+import { alerts } from '../data/content';
+const { lang } = Astro.props as { lang: Lang };
+const items = alerts[lang];
+---
+{items.map((a) => (
+  <section class:list={['usa-site-alert', 'usa-site-alert--slim', 'usa-site-alert--info', { 'site-alert--caution': a.kind === 'caution' }]}
+    aria-label={a.label}>
+    <div class="usa-alert">
+      <div class="usa-alert__body">
+        <p class="usa-alert__text">
+          <strong>{a.label}:</strong>{' '}{a.text}{' '}
+          <a class="usa-link" href={a.link.href} rel="noopener">{a.link.label}</a>
+        </p>
+      </div>
+    </div>
+  </section>
+))}

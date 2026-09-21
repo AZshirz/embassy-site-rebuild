@@ -135,6 +135,27 @@ export const ui = {
   },
 } as const;
 
+// ---------- Site-wide alerts (shown under the header on every page) ----------
+// In Phase 2 these come from a scheduled job that reads the travel.state.gov advisory feed;
+// for now they mirror what the original site showed on 2026-09-20.
+
+export interface SiteAlert { kind: 'advisory' | 'caution'; label: string; text: string; link: Link }
+
+export const alerts: Record<Lang, SiteAlert[]> = {
+  en: [
+    { kind: 'advisory', label: 'Travel Advisory Level 3', text: 'Reconsider travel to Azerbaijan.',
+      link: { label: 'Read the advisory', href: 'https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/azerbaijan-travel-advisory.html', external: true } },
+    { kind: 'caution', label: 'Worldwide Caution', text: 'The Department of State advises Americans worldwide to exercise increased caution.',
+      link: { label: 'Read the worldwide caution', href: 'https://travel.state.gov/content/travel/en/traveladvisories/ea/worldwide-caution.html', external: true } },
+  ],
+  az: [
+    { kind: 'advisory', label: 'Səyahət xəbərdarlığı: 3-cü səviyyə', text: 'Azərbaycana səyahəti yenidən nəzərdən keçirin.',
+      link: { label: 'Xəbərdarlığı oxuyun', href: 'https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/azerbaijan-travel-advisory.html', external: true } },
+    { kind: 'caution', label: 'Qlobal xəbərdarlıq', text: 'Dövlət Departamenti bütün dünyadakı amerikalılara artan ehtiyatlılıq göstərməyi tövsiyə edir.',
+      link: { label: 'Qlobal xəbərdarlığı oxuyun', href: 'https://travel.state.gov/content/travel/en/traveladvisories/ea/worldwide-caution.html', external: true } },
+  ],
+};
+
 // ---------- Facts that do not change with language ----------
 
 export const embassy = {
@@ -168,6 +189,11 @@ export const embassy = {
   ] as Link[],
   originalSite: 'https://az.usembassy.gov/',
   contentReviewed: '2026-09-20',
+  // Photos are official U.S. Government work from the original site, resized by tools/optimize_images.py
+  photos: {
+    hero: { base: '/img/photos/hero-azeta', widths: [800, 1600], width: 1600, height: 700 },
+    leaders: { 'Amy Carlon': '/img/photos/carlon-320.webp', 'Sujata Sharma': '/img/photos/sharma-320.webp' } as Record<string, string>,
+  },
 };
 
 // ---------- Home page ----------
@@ -177,7 +203,29 @@ export const home = {
     title: 'Home',
     heroTitle: 'U.S. Embassy in Azerbaijan',
     heroText: 'Advancing the interests of the United States and serving and protecting U.S. citizens in Azerbaijan.',
+    heroAlt: 'Embassy staff and partners celebrate 30 years of partnership between AzETA and the U.S. Embassy, with U.S. and Azerbaijani flags',
     needTitle: 'I need…',
+    moreTitle: 'More services',
+    moreLinks: [
+      { label: 'Job opportunities', href: 'https://az.usembassy.gov/jobs/', external: true },
+      { label: 'News & events', href: 'https://az.usembassy.gov/news-events/', external: true },
+      { label: 'Holiday calendar', href: 'https://az.usembassy.gov/holiday-calendar/', external: true },
+      { label: 'Air quality monitor', href: 'https://www.airnow.gov/international/us-embassies-and-consulates/#Azerbaijan$Baku', external: true },
+      { label: 'Business', href: 'https://az.usembassy.gov/business/', external: true },
+    ] as Link[],
+    newsTitle: 'Embassy news',
+    news: [
+      { title: 'Chargé d\'Affaires Amy Carlon celebrated 30 years of partnership between AzETA and the U.S. Embassy', img: '/img/photos/news-azeta-480.webp', alt: 'Three women join hands over a table at an outdoor AzETA 30th-anniversary event', href: 'https://az.usembassy.gov/news-events/', external: true },
+      { title: 'Chargé d\'Affaires Amy Carlon and the Head of Ismayilli Executive Power discussed regional development and bilateral cooperation', img: '/img/photos/news-ismayilli-480.webp', alt: 'Delegations meet across a long conference table with U.S. and Azerbaijani flags', href: 'https://az.usembassy.gov/news-events/', external: true },
+      { title: 'Chargé d\'Affaires Amy Carlon visited the Coca-Cola production facility in Ismayilli', img: '/img/photos/news-cocacola-480.webp', alt: 'Embassy delegation in high-visibility vests meets with plant staff at a conference table', href: 'https://az.usembassy.gov/news-events/', external: true },
+    ],
+    washingtonTitle: 'News from Washington',
+    washingtonSource: 'ShareAmerica',
+    washington: [
+      { title: 'Look at the words: How the Constitution fulfills a promise', date: '2026-09-15', href: 'https://share.america.gov/', external: true },
+      { title: 'Rebuilding America\'s manufacturing workforce', date: '2026-09-11', href: 'https://share.america.gov/', external: true },
+      { title: 'When baseball fields became the home of the brave', date: '2026-09-09', href: 'https://share.america.gov/', external: true },
+    ],
     needs: [
       { title: 'A U.S. visa', text: 'Visit, study, work in, or immigrate to the United States.', link: { label: 'Visa information', href: '/visas/' } },
       { title: 'A U.S. passport', text: 'Renew, replace, or apply for a passport while abroad.', link: { label: 'Passport services', href: 'https://travel.state.gov/content/travel/en/passports.html', external: true } },
@@ -199,10 +247,10 @@ export const home = {
     mapLink: 'Open in OpenStreetMap',
     reportsTitle: 'U.S. Department of State reports',
     reports: [
-      { label: '2025 Trafficking in Persons Report', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true },
-      { label: '2024 Country Report on Human Rights Practices', href: 'https://www.state.gov/reports/2024-country-reports-on-human-rights-practices/', external: true },
-      { label: '2023 Report on International Religious Freedom', href: 'https://www.state.gov/reports/2023-report-on-international-religious-freedom/', external: true },
-    ] as Link[],
+      { label: '2025 Trafficking in Persons Report', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true, img: '/img/photos/report-tip-240.webp' },
+      { label: '2024 Country Report on Human Rights Practices', href: 'https://www.state.gov/reports/2024-country-reports-on-human-rights-practices/', external: true, img: '/img/photos/report-hrr-240.webp' },
+      { label: '2023 Report on International Religious Freedom', href: 'https://www.state.gov/reports/2023-report-on-international-religious-freedom/', external: true, img: '/img/photos/report-irf-240.webp' },
+    ],
     policyTitle: 'Policy and history',
     policyText: 'Learn about U.S.–Azerbaijan policy and the history of the embassy.',
     policyLink: { label: 'U.S. relations with Azerbaijan', href: 'https://www.state.gov/u-s-relations-with-azerbaijan/', external: true },
@@ -211,7 +259,29 @@ export const home = {
     title: 'Ana səhifə',
     heroTitle: 'ABŞ-ın Azərbaycandakı Səfirliyi',
     heroText: 'Amerika Birləşmiş Ştatlarının maraqlarını irəli aparmaq, Azərbaycandakı ABŞ vətəndaşlarına xidmət göstərmək və onları qorumaq.',
+    heroAlt: 'Səfirlik əməkdaşları və tərəfdaşlar ABŞ və Azərbaycan bayraqları önündə AzETA ilə ABŞ Səfirliyi arasında 30 illik tərəfdaşlığı qeyd edir',
     needTitle: 'Mənə lazımdır…',
+    moreTitle: 'Digər xidmətlər',
+    moreLinks: [
+      { label: 'İş imkanları', href: 'https://az.usembassy.gov/jobs/', external: true },
+      { label: 'Xəbərlər və tədbirlər', href: 'https://az.usembassy.gov/news-events/', external: true },
+      { label: 'Bayram təqvimi', href: 'https://az.usembassy.gov/holiday-calendar/', external: true },
+      { label: 'Hava keyfiyyəti monitoru', href: 'https://www.airnow.gov/international/us-embassies-and-consulates/#Azerbaijan$Baku', external: true },
+      { label: 'Biznes', href: 'https://az.usembassy.gov/business/', external: true },
+    ] as Link[],
+    newsTitle: 'Səfirlik xəbərləri',
+    news: [
+      { title: 'Müvəqqəti işlər vəkili Emi Karlon AzETA ilə ABŞ Səfirliyi arasında 30 illik tərəfdaşlığı qeyd etdi', img: '/img/photos/news-azeta-480.webp', alt: 'AzETA-nın 30 illik yubileyi tədbirində üç qadın masa üzərində əl-ələ tutur', href: 'https://az.usembassy.gov/news-events/', external: true },
+      { title: 'Müvəqqəti işlər vəkili Emi Karlon və İsmayıllı Rayon İcra Hakimiyyətinin başçısı regionun inkişafını və ikitərəfli əməkdaşlığı müzakirə etdi', img: '/img/photos/news-ismayilli-480.webp', alt: 'Nümayəndə heyətləri ABŞ və Azərbaycan bayraqları olan uzun masa arxasında görüşür', href: 'https://az.usembassy.gov/news-events/', external: true },
+      { title: 'Müvəqqəti işlər vəkili Emi Karlon İsmayıllıdakı Coca-Cola istehsalat müəssisəsini ziyarət etdi', img: '/img/photos/news-cocacola-480.webp', alt: 'Səfirlik nümayəndə heyəti işıqqaytaran jiletlərdə müəssisə əməkdaşları ilə masa arxasında görüşür', href: 'https://az.usembassy.gov/news-events/', external: true },
+    ],
+    washingtonTitle: 'Vaşinqtondan xəbərlər',
+    washingtonSource: 'ShareAmerica',
+    washington: [
+      { title: 'Look at the words: How the Constitution fulfills a promise', date: '2026-09-15', href: 'https://share.america.gov/', external: true },
+      { title: 'Rebuilding America\'s manufacturing workforce', date: '2026-09-11', href: 'https://share.america.gov/', external: true },
+      { title: 'When baseball fields became the home of the brave', date: '2026-09-09', href: 'https://share.america.gov/', external: true },
+    ],
     needs: [
       { title: 'ABŞ vizası', text: 'Amerika Birləşmiş Ştatlarına səfər, təhsil, iş və ya immiqrasiya.', link: { label: 'Viza məlumatı', href: '/az/visas/' } },
       { title: 'ABŞ pasportu', text: 'Xaricdə pasportu yeniləyin, dəyişdirin və ya yeni pasport üçün müraciət edin.', link: { label: 'Pasport xidmətləri', href: 'https://travel.state.gov/content/travel/en/passports.html', external: true } },
@@ -233,10 +303,10 @@ export const home = {
     mapLink: 'OpenStreetMap-də açın',
     reportsTitle: 'ABŞ Dövlət Departamentinin hesabatları',
     reports: [
-      { label: 'İnsan alveri üzrə 2025-ci il hesabatı', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true },
-      { label: 'İnsan hüquqları üzrə 2024-cü il ölkə hesabatı', href: 'https://www.state.gov/reports/2024-country-reports-on-human-rights-practices/', external: true },
-      { label: 'Beynəlxalq dini azadlıq üzrə 2023-cü il hesabatı', href: 'https://www.state.gov/reports/2023-report-on-international-religious-freedom/', external: true },
-    ] as Link[],
+      { label: 'İnsan alveri üzrə 2025-ci il hesabatı', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true, img: '/img/photos/report-tip-240.webp' },
+      { label: 'İnsan hüquqları üzrə 2024-cü il ölkə hesabatı', href: 'https://www.state.gov/reports/2024-country-reports-on-human-rights-practices/', external: true, img: '/img/photos/report-hrr-240.webp' },
+      { label: 'Beynəlxalq dini azadlıq üzrə 2023-cü il hesabatı', href: 'https://www.state.gov/reports/2023-report-on-international-religious-freedom/', external: true, img: '/img/photos/report-irf-240.webp' },
+    ],
     policyTitle: 'Siyasət və tarix',
     policyText: 'ABŞ–Azərbaycan siyasəti və səfirliyin tarixi haqqında məlumat əldə edin.',
     policyLink: { label: 'ABŞ-ın Azərbaycanla əlaqələri', href: 'https://www.state.gov/u-s-relations-with-azerbaijan/', external: true },
@@ -271,6 +341,9 @@ export const visas = {
       { title: 'Attend your interview', text: 'Bring your passport, DS-160 confirmation, fee receipt, and supporting documents.' },
     ],
     stepsLink: { label: 'Schedule an interview (ustraveldocs.com)', href: 'https://www.ustraveldocs.com/az/en/nonimmigrant-visa', external: true },
+    wizardTitle: 'Not sure which visa you need?',
+    wizardText: 'The Visa Wizard on travel.state.gov asks a few questions about your purpose of travel and points you to the right visa category.',
+    wizardLink: { label: 'Use the Visa Wizard', href: 'https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/wizard.html', external: true },
     typesTitle: 'Visa types',
     types: [
       { title: 'Tourism and visit', text: 'Visitor visas (B-1/B-2) for tourism, visiting family, or medical treatment.', link: { label: 'Tourism and visit visas', href: 'https://travel.state.gov/content/travel/en/us-visas/tourism-visit.html', external: true } },
@@ -328,6 +401,9 @@ export const visas = {
       { title: 'Müsahibədə iştirak edin', text: 'Pasportunuzu, DS-160 təsdiqini, ödəniş qəbzini və təsdiqedici sənədləri özünüzlə gətirin.' },
     ],
     stepsLink: { label: 'Müsahibə təyin edin (ustraveldocs.com)', href: 'https://www.ustraveldocs.com/az/az/nonimmigrant-visa', external: true },
+    wizardTitle: 'Hansı vizaya ehtiyacınız olduğunu bilmirsiniz?',
+    wizardText: 'travel.state.gov saytındakı Viza Sehrbazı səyahət məqsədinizlə bağlı bir neçə sual verir və sizi düzgün viza kateqoriyasına yönləndirir.',
+    wizardLink: { label: 'Viza Sehrbazından istifadə edin', href: 'https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/wizard.html', external: true },
     typesTitle: 'Viza növləri',
     types: [
       { title: 'Turizm və səfər', text: 'Turizm, ailə ziyarəti və ya müalicə üçün qonaq vizaları (B-1/B-2).', link: { label: 'Turizm və səfər vizaları', href: 'https://travel.state.gov/content/travel/en/us-visas/tourism-visit.html', external: true } },

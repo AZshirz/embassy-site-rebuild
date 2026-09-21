@@ -67,6 +67,88 @@ body {
   margin: 0;
 }
 
+/* Hero with a photo: image fills the band, text sits on a dark gradient for contrast */
+.site-hero--photo {
+  position: relative;
+  padding: 0;
+  min-height: 22rem;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.site-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+.site-hero__overlay {
+  position: relative;
+  width: 100%;
+  padding: 5rem 0 2.5rem;
+  background: linear-gradient(to top, rgba(22, 46, 81, 0.95) 0%, rgba(22, 46, 81, 0.75) 55%, rgba(22, 46, 81, 0) 100%);
+}
+.site-hero--photo h1,
+.site-hero--photo p {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Site-wide alert strip: a yellow "caution" variant built on the USWDS "info" site alert.
+   Uses the same left-border + icon layout, with USWDS warning colours. */
+.usa-site-alert.site-alert--caution .usa-alert {
+  background-color: #faf3d1;
+  border-left-color: #ffbe2e;
+}
+.usa-site-alert.site-alert--caution .usa-alert .usa-alert__body {
+  background-color: #faf3d1;
+  color: #1b1b1b;
+}
+.usa-site-alert.site-alert--caution .usa-alert .usa-alert__body::before {
+  background-color: #1b1b1b;
+  -webkit-mask-image: url(/uswds/img/usa-icons/warning.svg), linear-gradient(transparent, transparent);
+  mask-image: url(/uswds/img/usa-icons/warning.svg), linear-gradient(transparent, transparent);
+}
+.usa-site-alert--slim .usa-alert__text {
+  font-size: 0.95rem;
+}
+
+/* Horizontal link lists (quick links, social) */
+.site-inline-links {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+/* Report covers */
+.site-reports {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+.site-report {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  color: #005ea2;
+  font-weight: 700;
+  text-decoration: none;
+}
+.site-report:hover span {
+  text-decoration: underline;
+}
+.site-report img {
+  flex: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
 /* Sections */
 .site-section {
   padding: 2.5rem 0;
@@ -110,9 +192,19 @@ body {
 
 /* Leaders */
 .site-leader {
-  border-left: 4px solid var(--site-blue);
-  padding-left: 1rem;
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
   margin-bottom: 1.5rem;
+}
+.site-leader__photo {
+  flex: none;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 .site-leader h3 {
   margin: 0;

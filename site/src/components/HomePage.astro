@@ -11,12 +11,21 @@ const u = ui[lang];
 // Opening hours as "HH:MM-HH:MM" or "closed", Monday first, for the live status badge.
 const hoursAttr = embassy.hours.map((h) => (h ? `${h.open}-${h.close}` : 'closed')).join(',');
 const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${embassy.geo.lng}#map=17/${embassy.geo.lat}/${embassy.geo.lng}`;
+
+const hero = embassy.photos.hero;
+const heroSrcset = hero.widths.map((w) => `${hero.base}-${w}.webp ${w}w`).join(', ');
+const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 <Base lang={lang} title={t.title} description={t.heroText} path="/">
-  <section class="site-hero" aria-labelledby="hero-heading">
-    <div class="grid-container">
-      <h1 id="hero-heading" class="font-heading-3xl">{t.heroTitle}</h1>
-      <p>{t.heroText}</p>
+  <section class="site-hero site-hero--photo" aria-labelledby="hero-heading">
+    <!-- One responsive photo: the browser picks the 800px or 1600px file. fetchpriority=high because it is the LCP element. -->
+    <img class="site-hero__img" src={`${hero.base}-${hero.widths[0]}.webp`} srcset={heroSrcset}
+      sizes="100vw" width={hero.width} height={hero.height} alt={t.heroAlt} fetchpriority="high" decoding="async" />
+    <div class="site-hero__overlay">
+      <div class="grid-container">
+        <h1 id="hero-heading" class="font-heading-3xl">{t.heroTitle}</h1>
+        <p>{t.heroText}</p>
+      </div>
     </div>
   </section>
 
@@ -24,10 +33,53 @@ const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${e
     <div class="grid-container">
       <h2 id="needs-heading">{t.needTitle}</h2>
       <CardGrid cards={t.needs} />
+      <h3 class="margin-top-3">{t.moreTitle}</h3>
+      <ul class="site-inline-links">
+        {t.moreLinks.map((l) => (
+          <li><a class="usa-link usa-link--external" href={l.href} rel="noopener">{l.label}</a></li>
+        ))}
+      </ul>
     </div>
   </section>
 
-  <section class="site-section site-section--alt" id="contact" aria-labelledby="contact-heading">
+  <section class="site-section site-section--alt" aria-labelledby="news-heading">
+    <div class="grid-container">
+      <h2 id="news-heading">{t.newsTitle}</h2>
+      <ul class="usa-card-group">
+        {t.news.map((n) => (
+          <li class="usa-card usa-card--flag-mobile tablet:grid-col-4">
+            <div class="usa-card__container">
+              <div class="usa-card__media">
+                <div class="usa-card__img">
+                  <img src={n.img} alt={n.alt} width="480" height="300" loading="lazy" decoding="async" />
+                </div>
+              </div>
+              <div class="usa-card__header">
+                <h3 class="usa-card__heading font-heading-md"><a class="usa-link" href={n.href} rel="noopener">{n.title}</a></h3>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <h3 class="margin-top-4">{t.washingtonTitle}</h3>
+      <ul class="usa-collection usa-collection--condensed">
+        {t.washington.map((w) => (
+          <li class="usa-collection__item">
+            <div class="usa-collection__body">
+              <h4 class="usa-collection__heading"><a class="usa-link" href={w.href} rel="noopener">{w.title}</a></h4>
+              <div class="usa-collection__meta">
+                <span class="usa-collection__meta-item">{t.washingtonSource}</span>
+                <time class="usa-collection__meta-item" datetime={w.date}>{dateFmt.format(new Date(w.date + 'T00:00:00'))}</time>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="site-section" id="contact" aria-labelledby="contact-heading">
     <div class="grid-container">
       <h2 id="contact-heading">{t.contactTitle}</h2>
       <div class="grid-row grid-gap-lg">
@@ -46,7 +98,7 @@ const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${e
           <p>{embassy.fax}</p>
 
           <h3>{t.followLabel}</h3>
-          <ul class="usa-list usa-list--unstyled">
+          <ul class="site-inline-links">
             {embassy.social.map((s) => (
               <li><a class="usa-link usa-link--external" href={s.href} rel="noopener">{s.label}</a></li>
             ))}
@@ -77,16 +129,20 @@ const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${e
     </div>
   </section>
 
-  <section class="site-section" aria-labelledby="leaders-heading">
+  <section class="site-section site-section--alt" aria-labelledby="leaders-heading">
     <div class="grid-container">
       <h2 id="leaders-heading">{t.leadersTitle}</h2>
       <div class="grid-row grid-gap-lg">
         {t.leaders.map((l) => (
           <div class="tablet:grid-col-6">
             <div class="site-leader">
-              <h3>{l.name}</h3>
-              <p class="site-leader__role">{l.role}</p>
-              <p>{l.bio}</p>
+              <img class="site-leader__photo" src={embassy.photos.leaders[l.name]} alt={`${l.name}, ${l.role}`}
+                width="160" height="160" loading="lazy" decoding="async" />
+              <div>
+                <h3>{l.name}</h3>
+                <p class="site-leader__role">{l.role}</p>
+                <p>{l.bio}</p>
+              </div>
             </div>
           </div>
         ))}
@@ -94,23 +150,22 @@ const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${e
     </div>
   </section>
 
-  <section class="site-section site-section--alt" aria-labelledby="reports-heading">
+  <section class="site-section" aria-labelledby="reports-heading">
     <div class="grid-container">
-      <div class="grid-row grid-gap-lg">
-        <div class="tablet:grid-col-6">
-          <h2 id="reports-heading">{t.reportsTitle}</h2>
-          <ul class="usa-list">
-            {t.reports.map((r) => (
-              <li><a class="usa-link usa-link--external" href={r.href} rel="noopener">{r.label}</a></li>
-            ))}
-          </ul>
-        </div>
-        <div class="tablet:grid-col-6">
-          <h2>{t.policyTitle}</h2>
-          <p>{t.policyText}</p>
-          <a class="usa-button usa-button--outline" href={t.policyLink.href} rel="noopener">{t.policyLink.label}</a>
-        </div>
-      </div>
+      <h2 id="reports-heading">{t.reportsTitle}</h2>
+      <ul class="site-reports">
+        {t.reports.map((r) => (
+          <li>
+            <a class="site-report" href={r.href} rel="noopener">
+              <img src={r.img} alt="" width="120" height="155" loading="lazy" decoding="async" />
+              <span>{r.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <h2 class="margin-top-5">{t.policyTitle}</h2>
+      <p>{t.policyText}</p>
+      <a class="usa-button usa-button--outline" href={t.policyLink.href} rel="noopener">{t.policyLink.label}</a>
     </div>
   </section>
 </Base>

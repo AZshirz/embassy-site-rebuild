@@ -5,6 +5,7 @@ import { ui, embassy } from '../data/content';
 import GovBanner from '../components/GovBanner.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import SiteAlerts from '../components/SiteAlerts.astro';
 
 interface Props {
   lang: Lang;
@@ -80,6 +81,7 @@ const jsonLd = {
 
     <GovBanner lang={lang} />
     <Header lang={lang} currentPath={currentPath} />
+    <SiteAlerts lang={lang} />
 
     <main id="main-content" class="site-main">
       <slot />

@@ -33,6 +33,16 @@ const t = visas[lang];
   </ol>
   <a class="usa-button" href={t.stepsLink.href} rel="noopener">{t.stepsLink.label}</a>
 
+  <div class="usa-summary-box margin-top-4" role="region" aria-labelledby="wizard-heading">
+    <div class="usa-summary-box__body">
+      <h3 class="usa-summary-box__heading" id="wizard-heading">{t.wizardTitle}</h3>
+      <div class="usa-summary-box__text">
+        <p>{t.wizardText}</p>
+        <a class="usa-button usa-button--outline" href={t.wizardLink.href} rel="noopener">{t.wizardLink.label}</a>
+      </div>
+    </div>
+  </div>
+
   <h2 id="types">{t.typesTitle}</h2>
   <CardGrid cards={t.types} />
 
