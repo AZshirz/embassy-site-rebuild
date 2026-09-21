@@ -5,6 +5,8 @@ A from-scratch rebuild of four pages from the public **U.S. Embassy in Azerbaija
 the [U.S. Web Design System](https://designsystem.digital.gov/), Section 508 / WCAG 2.1 AA
 accessibility, and basic web security hygiene — with a measured before/after.
 
+**Live site:** https://embassy-site-rebuild.sneakywun58.workers.dev (English) · [Azərbaycan dili](https://embassy-site-rebuild.sneakywun58.workers.dev/az/)
+
 > **Unofficial portfolio project.** Not affiliated with the U.S. Department of State.
 > The site content is U.S. Government work (public domain); the Azerbaijani text is my own
 > translation and would need native-speaker review before real use.
@@ -72,7 +74,7 @@ a news agency, so it was deliberately left out.
 | Front end | [Astro](https://astro.build/) static site + [USWDS 3](https://designsystem.digital.gov/) | Plain HTML/CSS output, no client framework; USWDS is the federal standard and does the design work |
 | Content | One TypeScript file, `site/src/data/content.ts`, keyed by language | Editing text never touches a template; adding a language is one object |
 | Audit / automation | Python (`tools/audit.py`) + Lighthouse + Puppeteer scripts | Repeatable, deterministic before/after measurement |
-| Hosting (planned) | Cloudflare Pages or GitHub Pages | Free; Cloudflare Pages honours `_headers` for the security headers |
+| Hosting | Cloudflare Workers (static assets), auto-deployed from `main` | Free; honours `_headers`, so the security headers are actually sent |
 
 Cost of everything in this repo: **$0**.
 
