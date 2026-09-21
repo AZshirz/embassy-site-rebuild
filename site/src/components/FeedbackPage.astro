@@ -9,6 +9,9 @@ import PageHeading from './PageHeading.astro';
 
 const { lang } = Astro.props as { lang: Lang };
 const t = ui[lang].feedback;
+// The pages a visitor can give feedback about: the primary navigation, minus the in-page "#contact" anchor.
+const pages = ui[lang].primaryNav.map((p) => ({ label: p.label, href: p.href.split('#')[0] }))
+  .filter((p, i, all) => all.findIndex((q) => q.href === p.href) === i);
 ---
 <Base lang={lang} title={t.title} description={t.lead} path="/feedback/">
   <div class="grid-container padding-bottom-5">
@@ -34,7 +37,11 @@ const t = ui[lang].feedback;
       <input class="usa-input" id="feedback-email" name="email" type="email" autocomplete="email" />
 
       <label class="usa-label" for="feedback-page">{t.pageLabel}</label>
-      <input class="usa-input" id="feedback-page" name="page" type="text" value="/" readonly />
+      <!-- A fixed list of the site's pages, not free text: the value is pre-selected from the page the
+           visitor came from (feedback.js), and the API rejects anything that isn't a path on this site. -->
+      <select class="usa-select" id="feedback-page" name="page">
+        {pages.map((p) => <option value={p.href}>{p.label}</option>)}
+      </select>
 
       <!-- Honeypot: invisible to people, tempting to bots. The API rejects any submission that fills it. -->
       <div class="site-honeypot" aria-hidden="true">

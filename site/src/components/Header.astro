@@ -45,6 +45,9 @@ const isCurrent = (href: string) => href === currentPath;
         </form>
         <ul class="usa-nav__secondary-links">
           <li class="usa-nav__secondary-item">
+            <a href={`${t.feedback.href}?page=${encodeURIComponent(currentPath)}`}>{t.feedback.link}</a>
+          </li>
+          <li class="usa-nav__secondary-item">
             <a href={t.langSwitchHref} lang={otherLang} hreflang={otherLang}>{t.langSwitchLabel}</a>
           </li>
           <li class="usa-nav__secondary-item">

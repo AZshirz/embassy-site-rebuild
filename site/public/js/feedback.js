@@ -5,12 +5,13 @@
   var form = document.getElementById('feedback-form');
   if (!form) return;
 
-  // Which page is the feedback about? The page that linked here (same site only), else "/".
+  // Pre-select the page the visitor came from (?page= or the referrer, same site only).
+  // The <select> only contains the site's own pages, so an unknown value simply leaves the default.
   var pageField = document.getElementById('feedback-page');
   try {
     var from = new URLSearchParams(window.location.search).get('page') || (document.referrer ? new URL(document.referrer).pathname : '');
     if (from && /^\/[A-Za-z0-9\-_\/]*$/.test(from)) pageField.value = from;
-  } catch (e) { /* keep "/" */ }
+  } catch (e) { /* keep the first option */ }
 
   var status = document.getElementById('feedback-status');
   var button = form.querySelector('button[type=submit]');
