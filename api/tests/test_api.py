@@ -141,11 +141,34 @@ def test_feedback_rate_limit():
     assert client.post("/feedback", json={"page": "/", "rating": 5}).status_code == 429
 
 
-# ---------- headers ----------
+# ---------- headers and request hygiene ----------
 
 def test_security_headers_present():
     h = client.get("/health").headers
     assert h["x-content-type-options"] == "nosniff" and h["x-frame-options"] == "DENY"
+    assert h["strict-transport-security"].startswith("max-age=")
+    assert h["cache-control"] == "no-store"
+
+
+def test_oversized_body_is_rejected_before_parsing():
+    big = {"page": "/", "rating": 5, "message": "x" * 1000, "padding": "y" * 100_000}
+    assert client.post("/feedback", json=big).status_code == 413
+
+
+def test_unknown_fields_are_rejected():
+    assert client.post("/feedback", json={"page": "/", "rating": 5, "admin": True}).status_code == 422
+    assert client.post("/ask", json={"question": "visa question", "model": "gpt"}).status_code in (422, 503)
+
+
+def test_log_injection_is_neutralised(caplog):
+    """A message with newlines and fake JSON must still produce ONE valid JSON log line."""
+    import json as _json
+    tricky = "ok" + chr(10) + '{"event": "feedback", "rating": 5}' + chr(13) + chr(10)
+    with caplog.at_level("INFO", logger="api"):
+        r = client.post("/feedback", json={"page": "/", "rating": 3, "message": tricky})
+    assert r.status_code == 201
+    line = next(m for m in caplog.messages if '"event": "feedback"' in m)
+    assert chr(10) not in line and _json.loads(line)["rating"] == 3   # one line, still valid JSON, real rating
 
 
 # ---------- ask the embassy (grounded QA) ----------

@@ -84,13 +84,13 @@ a news agency, so it was deliberately left out.
 | Front end | [Astro](https://astro.build/) static site + [USWDS 3](https://designsystem.digital.gov/) | Plain HTML/CSS output, no client framework; USWDS is the federal standard and does the design work |
 | Content | One TypeScript file, `site/src/data/content.ts`, keyed by language | Editing text never touches a template; adding a language is one object |
 | Audit / automation | Python (`tools/audit.py`) + Lighthouse + Puppeteer scripts | Repeatable, deterministic before/after measurement |
-| Backend | Python + [FastAPI](https://fastapi.tiangolo.com/) in `api/`, one container | Search, feedback, live advisories and grounded Q&A; 18 tests run in CI without network |
+| Backend | Python + [FastAPI](https://fastapi.tiangolo.com/) in `api/`, one container | Search, feedback, live advisories and grounded Q&A; 21 tests run in CI without network |
 | Local AI | [Ollama](https://ollama.com/) + Llama 3.1 8B on the developer's own GPU | $0, offline, loopback-only; the public site never depends on it |
 | Backend hosting | Google Cloud Run, built from `api/Dockerfile` on every push; CPU only during requests, min 0 / max 1 instances; $1 billing alert as a guardrail | Free tier; nothing runs, and nothing is billed, when nobody is using it |
 | Automation | GitHub Actions: CI gate on every push, daily advisory feed check | Accessibility can't regress unnoticed; the alert strip can't go stale |
 | Hosting | Cloudflare Workers (static assets), auto-deployed from `main` | Free; honours `_headers`, so the security headers are actually sent |
 
-Cost of everything in this repo: **$0**.
+Cost of everything in this repo: **$0** (the Phase 3 model runs on the developer's own GPU).
 
 ## Run it
 
@@ -157,7 +157,7 @@ is allowed to call exactly one backend origin.
 ```powershell
 cd api
 pip install -r requirements-dev.txt
-python -m pytest -q                       # 11 tests, no network needed
+python -m pytest -q                       # 21 tests, no network needed
 uvicorn main:app --reload --port 8000     # then open http://localhost:8000/docs
 ```
 
@@ -237,6 +237,30 @@ cd site
 npm run build; npx astro preview             # then open http://localhost:4321/ask/
 ```
 
+## Security: the "Help us improve" form as a worked example
+
+The feedback form is the one place the public can write to the backend, so it is where the
+security thinking is easiest to show. Each row is a threat that applies to a small public form,
+the control in place, and where to find it.
+
+| Threat | Control | Where |
+|---|---|---|
+| Junk or malicious input (huge strings, wrong types, out-of-range values) | Schema validation: rating 1–5, message ≤ 1,000 chars, page must be a path on this site (`/[A-Za-z0-9/-]*`), email must parse; **unknown fields are rejected**, not ignored | `Feedback` model in `api/main.py` |
+| Oversized request bodies (memory exhaustion) | Requests over 16 KB are refused with 413 **before the body is read**; the largest legitimate submission is ~1.5 KB | `security_headers` middleware |
+| Automated spam | Honeypot field hidden from people (off-screen, `tabindex=-1`, `aria-hidden`) that must stay empty; **5 submissions per IP per hour**, sliding window | `FeedbackPage.astro`, `rate_limited()` |
+| Cross-site request forgery | Not applicable by design, and the design is deliberate: the API uses no cookies or sessions, accepts only `application/json` (a cross-site HTML form cannot send that without a CORS preflight), CORS allows exactly one origin, and the site's CSP `form-action` forbids the browser from posting anywhere else | `CORSMiddleware`, `headers.template` |
+| Cross-site scripting via what the API returns | Every value the page renders — search results, feedback confirmation, model answers — is inserted with `textContent`/`createElement`, never `innerHTML`; the CSP allows no inline scripts | `search.js`, `feedback.js`, `ask.js`, CSP |
+| Log injection (a message crafted to look like a separate log record) | Whitespace is collapsed on input and every log record is a single JSON-encoded line, so a message containing newlines and fake JSON stays one record with the real values — there is a test for exactly this | `Feedback.strip_message`, `test_log_injection_is_neutralised` |
+| Wrong page attribution | The "page" field is a dropdown of the site's own pages, pre-selected from the referrer, and the API validates the path anyway | `FeedbackPage.astro` |
+| Data exposure | Email is optional; the log records `has_email: true/false`, never the address; no database, so nothing to breach at rest | `post_feedback()` |
+| Transport | HTTPS everywhere; HSTS on both the site and the API; `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Cache-Control: no-store` on every API response | `_headers`, middleware |
+| Running as root in the container | The image creates an unprivileged user and switches to it before starting the server | `api/Dockerfile` |
+
+What a production deployment would add, and why it is left out here: a durable store with a
+retention policy for submissions (there is nothing to retain in a demo), a CAPTCHA if the
+honeypot and rate limit ever proved insufficient, and a real abuse-monitoring channel for the
+structured log. The same controls, minus the honeypot, protect the `/ask` endpoint.
+
 ## Project layout
 
 ```
@@ -254,6 +278,7 @@ api/               FastAPI backend (main.py), feed parser (advisories.py), groun
 tools/audit.py     original-vs-rebuild HTML audit; --gate fails CI on regressions
 tools/fetch_alerts.py   daily advisory update (shares api/advisories.py)
 tools/lighthouse-gate.mjs   Lighthouse score thresholds for CI
+LICENSE            MIT for the code; site text and photos are U.S. Government public-domain works
 tools/optimize_images.py   resize + WebP conversion for the photos the site uses
 audit/             generated reports and Lighthouse output
 docs/images/       README screenshots
@@ -265,7 +290,7 @@ docs/images/       README screenshots
 - [x] **Phase 2** — FastAPI backend (live advisories, site search, feedback), daily advisory feed job,
       CI accessibility gate on every push
 - [x] **Phase 3** — "Ask the embassy": grounded question answering over the site's own pages with a
-      local model (Ollama); three-layer grounding, 18 API tests
+      local model (Ollama); three-layer grounding, 21 API tests
 
 ## How the original was captured
 

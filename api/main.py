@@ -28,7 +28,8 @@ from typing import Literal
 import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 import advisories
 import ask as ask_module
@@ -40,6 +41,7 @@ ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", f"{SITE_
 FEED_CACHE_SECONDS = int(os.environ.get("FEED_CACHE_SECONDS", "3600"))
 SEARCH_CACHE_SECONDS = int(os.environ.get("SEARCH_CACHE_SECONDS", "900"))
 FEEDBACK_LIMIT_PER_HOUR = int(os.environ.get("FEEDBACK_LIMIT_PER_HOUR", "5"))
+MAX_BODY_BYTES = int(os.environ.get("MAX_BODY_BYTES", str(16 * 1024)))   # the largest legitimate request is ~1.5 KB
 # Fallback copy of the site's alerts.json (tools/fetch_alerts.py keeps both files in sync).
 BUNDLED_ALERTS = Path(__file__).resolve().parent / "data" / "alerts.json"
 
@@ -64,12 +66,17 @@ STARTED = time.time()
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    """Same defence-in-depth headers the static site sends."""
+    """Reject oversized requests before reading them, and send the same defence-in-depth
+    headers the static site sends."""
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+        return JSONResponse({"detail": f"Request body too large (limit {MAX_BODY_BYTES} bytes)."}, status_code=413)
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Cache-Control", "no-store")
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
 
 
@@ -204,6 +211,8 @@ async def search(q: str = Query(..., min_length=2, max_length=100), lang: Litera
 # ---------- feedback ----------
 
 class Feedback(BaseModel):
+    model_config = ConfigDict(extra="forbid")   # unknown fields are a 422, not silently ignored
+
     page: str = Field(..., max_length=200, description="Path of the page the feedback is about, e.g. /visas/")
     rating: int = Field(..., ge=1, le=5)
     message: str = Field("", max_length=1000)
@@ -263,6 +272,8 @@ ASK_LIMIT_PER_HOUR = int(os.environ.get("ASK_LIMIT_PER_HOUR", "20"))
 
 
 class Question(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     question: str = Field(..., min_length=3, max_length=300)
     lang: Literal["en", "az"] = "en"
 
