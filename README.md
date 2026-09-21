@@ -6,6 +6,7 @@ the [U.S. Web Design System](https://designsystem.digital.gov/), Section 508 / W
 accessibility, and basic web security hygiene — with a measured before/after.
 
 **Live site:** https://embassy-site-rebuild.sneakywun58.workers.dev (English) · [Azərbaycan dili](https://embassy-site-rebuild.sneakywun58.workers.dev/az/)
+**Live API:** https://embassy-api-394144127807.us-east4.run.app/docs (interactive documentation; try `/alerts?country=Cambodia` or `/alerts/all?level=4`)
 
 > **Unofficial portfolio project.** Not affiliated with the U.S. Department of State.
 > The site content is U.S. Government work (public domain); the Azerbaijani text is my own
@@ -84,7 +85,7 @@ a news agency, so it was deliberately left out.
 | Content | One TypeScript file, `site/src/data/content.ts`, keyed by language | Editing text never touches a template; adding a language is one object |
 | Audit / automation | Python (`tools/audit.py`) + Lighthouse + Puppeteer scripts | Repeatable, deterministic before/after measurement |
 | Backend | Python + [FastAPI](https://fastapi.tiangolo.com/) in `api/`, one container | Search, feedback and live advisories; 11 tests run in CI without network |
-| Backend hosting | Google Cloud Run (scale-to-zero, max 1 instance) | Free tier; nothing runs, and nothing is billed, when nobody is using it |
+| Backend hosting | Google Cloud Run, built from `api/Dockerfile` on every push; CPU only during requests, min 0 / max 1 instances; $1 billing alert as a guardrail | Free tier; nothing runs, and nothing is billed, when nobody is using it |
 | Automation | GitHub Actions: CI gate on every push, daily advisory feed check | Accessibility can't regress unnoticed; the alert strip can't go stale |
 | Hosting | Cloudflare Workers (static assets), auto-deployed from `main` | Free; honours `_headers`, so the security headers are actually sent |
 
