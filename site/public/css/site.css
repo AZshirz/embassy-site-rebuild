@@ -256,3 +256,24 @@ body {
   font-size: 0.85rem;
   white-space: nowrap;
 }
+
+/* Honeypot field: off-screen for people, present for bots */
+.site-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+
+/* Desktop: USWDS stacks the language/emergency links above the search box and anchors that block
+   above the primary nav, so the header needs extra headroom for it. */
+@media (min-width: 64em) {
+  .site-header .usa-nav-container {
+    padding-top: 2.25rem;
+  }
+  .site-header .usa-nav__secondary {
+    bottom: 3.5rem;
+  }
+}

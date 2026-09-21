@@ -34,7 +34,7 @@ if (alerts.worldwide_caution.active) {
         <p class="usa-alert__text">
           <strong>{a.label}:</strong>{' '}{a.text}{' '}
           <a class="usa-link" href={a.link.href} rel="noopener">{a.link.label}</a>
-          {a.kind === 'advisory' && <span class="site-alert__meta"> · {t.updated} <time datetime={alerts.advisory.published}>{alerts.advisory.published}</time></span>}
+          {a.kind === 'advisory' && <span class="site-alert__meta"> · {t.updated}{' '}<time datetime={alerts.advisory.published}>{alerts.advisory.published}</time></span>}
         </p>
       </div>
     </div>

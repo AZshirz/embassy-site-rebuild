@@ -36,6 +36,13 @@ const isCurrent = (href: string) => href === currentPath;
         ))}
       </ul>
       <div class="usa-nav__secondary">
+        <form class="usa-search usa-search--small" role="search" method="get" action={t.search.href}>
+          <label class="usa-sr-only" for="header-search">{t.search.label}</label>
+          <input class="usa-input" id="header-search" type="search" name="q" placeholder={t.search.placeholder} minlength="2" maxlength="100" />
+          <button class="usa-button" type="submit">
+            <img src="/uswds/img/usa-icons-bg/search--white.svg" class="usa-search__submit-icon" alt={t.search.button} width="24" height="24" />
+          </button>
+        </form>
         <ul class="usa-nav__secondary-links">
           <li class="usa-nav__secondary-item">
             <a href={t.langSwitchHref} lang={otherLang} hreflang={otherLang}>{t.langSwitchLabel}</a>

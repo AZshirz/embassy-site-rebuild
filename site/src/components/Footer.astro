@@ -18,6 +18,7 @@ const t = ui[lang];
       <div class="tablet:grid-col-6 padding-top-2">
         <nav class="usa-footer__nav" aria-label={lang === 'en' ? 'Footer navigation' : 'Alt naviqasiya'}>
           <ul class="usa-list usa-list--unstyled site-footer__links">
+            <li><a class="usa-footer__primary-link" href={t.feedback.href}>{t.feedback.link}</a></li>
             {t.footerLinks.map((l) => (
               <li><a class="usa-footer__primary-link" href={l.href} rel="noopener">{l.label}</a></li>
             ))}

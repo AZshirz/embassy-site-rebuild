@@ -1,0 +1,51 @@
+---
+// "Help us improve" form. Posts JSON to the API's /feedback endpoint via /js/feedback.js.
+// USWDS form components; every field has a visible label; the honeypot is hidden from people.
+import type { Lang } from '../data/content';
+import { ui } from '../data/content';
+import { API_URL } from '../data/api';
+import Base from '../layouts/Base.astro';
+import PageHeading from './PageHeading.astro';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = ui[lang].feedback;
+---
+<Base lang={lang} title={t.title} description={t.lead} path="/feedback/">
+  <div class="grid-container padding-bottom-5">
+    <PageHeading title={t.title} lead={t.lead} />
+    <form class="usa-form usa-form--large" id="feedback-form" method="post" action={`${API_URL}/feedback`} novalidate
+      data-api={API_URL} data-sending={t.sending} data-thanks={t.thanks} data-reference={t.reference}
+      data-too-many={t.tooMany} data-error={t.error}>
+      <fieldset class="usa-fieldset">
+        <legend class="usa-legend usa-legend--large">{t.ratingLabel}</legend>
+        {t.ratings.map((label, i) => (
+          <div class="usa-radio">
+            <input class="usa-radio__input" id={`rating-${i + 1}`} type="radio" name="rating" value={i + 1} required />
+            <label class="usa-radio__label" for={`rating-${i + 1}`}>{i + 1} — {label}</label>
+          </div>
+        ))}
+      </fieldset>
+
+      <label class="usa-label" for="feedback-message">{t.messageLabel}</label>
+      <span class="usa-hint" id="feedback-message-hint">{t.messageHint}</span>
+      <textarea class="usa-textarea" id="feedback-message" name="message" maxlength="1000" aria-describedby="feedback-message-hint"></textarea>
+
+      <label class="usa-label" for="feedback-email">{t.emailLabel}</label>
+      <input class="usa-input" id="feedback-email" name="email" type="email" autocomplete="email" />
+
+      <label class="usa-label" for="feedback-page">{t.pageLabel}</label>
+      <input class="usa-input" id="feedback-page" name="page" type="text" value="/" readonly />
+
+      <!-- Honeypot: invisible to people, tempting to bots. The API rejects any submission that fills it. -->
+      <div class="site-honeypot" aria-hidden="true">
+        <label for="feedback-website">Website</label>
+        <input id="feedback-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <button class="usa-button margin-top-3" type="submit">{t.submit}</button>
+      <div id="feedback-status" class="margin-top-2" aria-live="polite"></div>
+      <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
+    </form>
+  </div>
+  <script src="/js/feedback.js" defer is:inline></script>
+</Base>

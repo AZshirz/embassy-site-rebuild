@@ -1,0 +1,29 @@
+---
+// Search results page. The form works without JavaScript (it submits ?q=); the results are
+// fetched from the API by /js/search.js and rendered into the live region below.
+import type { Lang } from '../data/content';
+import { ui } from '../data/content';
+import { API_URL } from '../data/api';
+import Base from '../layouts/Base.astro';
+import PageHeading from './PageHeading.astro';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = ui[lang].search;
+---
+<Base lang={lang} title={t.title} description={t.lead} path="/search/">
+  <div class="grid-container padding-bottom-5">
+    <PageHeading title={t.title} lead={t.lead} />
+    <form class="usa-search usa-search--big" role="search" method="get" action={t.href}>
+      <label class="usa-sr-only" for="search-page-field">{t.label}</label>
+      <input class="usa-input" id="search-page-field" type="search" name="q" placeholder={t.placeholder} required minlength="2" maxlength="100" />
+      <button class="usa-button" type="submit">{t.button}</button>
+    </form>
+
+    <div id="search-results" class="margin-top-4" aria-live="polite"
+      data-api={API_URL} data-lang={lang}
+      data-results-for={t.resultsFor} data-no-results={t.noResults} data-error={t.error}>
+      <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
+    </div>
+  </div>
+  <script src="/js/search.js" defer is:inline></script>
+</Base>

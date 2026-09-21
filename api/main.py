@@ -162,7 +162,8 @@ async def load_index() -> list[dict]:
 
 
 def tokenize(text: str) -> list[str]:
-    return re.findall(r"\w+", text.lower())
+    """Lower-case words with a crude plural fold so 'passport' matches 'passports' (and vice versa)."""
+    return [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in re.findall(r"\w+", text.lower())]
 
 
 def score(entry: dict, terms: list[str]) -> int:
