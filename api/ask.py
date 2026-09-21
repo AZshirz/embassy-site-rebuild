@@ -48,8 +48,17 @@ def tokenize(text: str) -> list[str]:
 
 
 def score(entry: dict, terms: list[str]) -> int:
+    """Rank for question answering: reward matching MANY DIFFERENT words from the question, and cap how
+    much one repeated word can contribute, so a page that says "visa" twenty times can't outrank the
+    page that actually has the phone number the question asked about."""
     title, section, body = tokenize(entry["title"]), tokenize(entry.get("section", "")), tokenize(entry["text"])
-    return sum(5 * title.count(t) + 3 * section.count(t) + body.count(t) for t in terms)
+    total, distinct = 0, 0
+    for t in set(terms):
+        hits = 5 * title.count(t) + 3 * section.count(t) + min(body.count(t), 3)
+        if hits:
+            distinct += 1
+            total += hits
+    return total + 8 * distinct
 
 
 # Words that appear in almost every passage and carry no meaning for retrieval. Without this
@@ -70,7 +79,7 @@ def question_terms(question: str, lang: str) -> list[str]:
     return [t for t in tokenize(question) if t not in stop and len(t) > 1]
 
 
-def retrieve(index: list[dict], question: str, lang: str, k: int = 4) -> list[dict]:
+def retrieve(index: list[dict], question: str, lang: str, k: int = 6) -> list[dict]:
     """Top-k passages for the question, best first. Empty list means 'the site has nothing on this'."""
     terms = question_terms(question, lang)
     if not terms:
@@ -115,7 +124,10 @@ def finalize(answer: str, passages: list[dict], lang: str) -> dict:
     declined = not answer or "CANNOT_ANSWER" in answer
     cites = [] if declined else cited_indexes(answer, len(passages))
     if declined or not cites:
-        return {"answer": DECLINE.get(lang, DECLINE["en"]), "grounded": False, "sources": sources}
+        # "Closest pages" list: one link per URL, even if several passages from it matched.
+        seen: set[str] = set()
+        closest = [s for s in sources if not (s["url"] in seen or seen.add(s["url"]))]
+        return {"answer": DECLINE.get(lang, DECLINE["en"]), "grounded": False, "sources": closest}
     return {"answer": answer, "grounded": True, "sources": [s for s in sources if s["n"] in cites]}
 
 
