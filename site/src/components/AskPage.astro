@@ -1,0 +1,36 @@
+---
+// "Ask the embassy": a question box backed by the API's /ask endpoint (a local model, grounded in
+// this site's pages). The page first asks the API whether the assistant is enabled and explains
+// itself honestly if not, so the public deployment never shows a dead feature.
+import type { Lang } from '../data/content';
+import { ui } from '../data/content';
+import { API_URL } from '../data/api';
+import Base from '../layouts/Base.astro';
+import PageHeading from './PageHeading.astro';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = ui[lang].ask;
+const searchHref = ui[lang].search.href;
+---
+<Base lang={lang} title={t.title} description={t.lead} path="/ask/">
+  <div class="grid-container padding-bottom-5">
+    <PageHeading title={t.title} lead={t.lead} />
+
+    <form class="usa-form usa-form--large" id="ask-form" data-api={API_URL} data-lang={lang}
+      data-thinking={t.thinking} data-sources={t.sources} data-grounded={t.grounded} data-not-grounded={t.notGrounded}
+      data-disabled={t.disabled} data-error={t.error}>
+      <label class="usa-label" for="ask-question">{t.label}</label>
+      <textarea class="usa-textarea" id="ask-question" name="question" required minlength="3" maxlength="300"
+        rows="2" placeholder={t.placeholder}></textarea>
+      <button class="usa-button margin-top-2" type="submit" id="ask-submit">{t.button}</button>
+      <p class="font-body-3xs text-base-dark margin-top-1"><a class="usa-link" href={searchHref}>{t.searchLink}</a></p>
+    </form>
+
+    <div id="ask-status" class="margin-top-3" aria-live="polite"></div>
+    <div id="ask-answer" class="margin-top-2" aria-live="polite"></div>
+
+    <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
+    <p class="font-body-2xs text-base-dark margin-top-4">{t.disclaimer}</p>
+  </div>
+  <script src="/js/ask.js" defer is:inline></script>
+</Base>

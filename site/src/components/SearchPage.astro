@@ -18,6 +18,7 @@ const t = ui[lang].search;
       <input class="usa-input" id="search-page-field" type="search" name="q" placeholder={t.placeholder} required minlength="2" maxlength="100" />
       <button class="usa-button" type="submit">{t.button}</button>
     </form>
+    <p class="margin-top-2"><a class="usa-link" href={ui[lang].ask.href}>{ui[lang].ask.title} →</a></p>
 
     <div id="search-results" class="margin-top-4" aria-live="polite"
       data-api={API_URL} data-lang={lang}

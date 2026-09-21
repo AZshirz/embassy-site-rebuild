@@ -31,6 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 import advisories
+import ask as ask_module
 
 # ---------- configuration (environment variables, with sensible defaults) ----------
 
@@ -223,15 +224,20 @@ class Feedback(BaseModel):
 
 
 _feedback_hits: dict[str, deque] = defaultdict(deque)
+_ask_hits: dict[str, deque] = defaultdict(deque)
 
 
-def rate_limited(client_ip: str) -> bool:
+def client_ip_of(request: Request) -> str:
+    return request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0].strip()
+
+
+def rate_limited(client_ip: str, hits_by_ip: dict[str, deque] = _feedback_hits, limit: int = FEEDBACK_LIMIT_PER_HOUR) -> bool:
     """Sliding one-hour window per IP, in memory (fine for one small instance)."""
     now = time.time()
-    hits = _feedback_hits[client_ip]
+    hits = hits_by_ip[client_ip]
     while hits and now - hits[0] > 3600:
         hits.popleft()
-    if len(hits) >= FEEDBACK_LIMIT_PER_HOUR:
+    if len(hits) >= limit:
         return True
     hits.append(now)
     return False
@@ -240,10 +246,55 @@ def rate_limited(client_ip: str) -> bool:
 @app.post("/feedback", status_code=201, tags=["feedback"])
 def post_feedback(item: Feedback, request: Request):
     """Accept a 'Help us improve' submission. Stored as a structured log line (no database needed)."""
-    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0].strip()
+    client_ip = client_ip_of(request)
     if rate_limited(client_ip):
         raise HTTPException(status_code=429, detail="Too many submissions; please try again later.")
     feedback_id = uuid.uuid4().hex[:12]
     log.info(json.dumps({"event": "feedback", "id": feedback_id, "page": item.page, "rating": item.rating,
                          "message": item.message, "has_email": item.email is not None}))
     return {"id": feedback_id, "received": True}
+
+
+# ---------- ask the embassy (local demo; off unless OLLAMA_URL is set) ----------
+
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "").rstrip("/")          # e.g. http://127.0.0.1:11434 - never a public host
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1:8b")
+ASK_LIMIT_PER_HOUR = int(os.environ.get("ASK_LIMIT_PER_HOUR", "20"))
+
+
+class Question(BaseModel):
+    question: str = Field(..., min_length=3, max_length=300)
+    lang: Literal["en", "az"] = "en"
+
+    @field_validator("question")
+    @classmethod
+    def collapse_whitespace(cls, v: str) -> str:
+        return re.sub(r"\s+", " ", v).strip()
+
+
+@app.get("/ask/status", tags=["ask"])
+def ask_status():
+    """Lets the page find out whether the assistant is available on this deployment."""
+    return {"enabled": bool(OLLAMA_URL), "model": OLLAMA_MODEL if OLLAMA_URL else None}
+
+
+@app.post("/ask", tags=["ask"])
+async def post_ask(item: Question, request: Request):
+    """Answer a question using only the site's own pages, with citations; decline otherwise."""
+    if not OLLAMA_URL:
+        raise HTTPException(status_code=503, detail="The assistant is not enabled on this deployment.")
+    if rate_limited(client_ip_of(request), _ask_hits, ASK_LIMIT_PER_HOUR):
+        raise HTTPException(status_code=429, detail="Too many questions; please try again later.")
+    try:
+        index = await load_index()
+    except Exception as exc:
+        log.warning(json.dumps({"event": "index_error", "error": str(exc)}))
+        raise HTTPException(status_code=503, detail="The site index is unavailable; try again later.")
+    try:
+        result = await ask_module.ask(index, item.question, item.lang, OLLAMA_URL, OLLAMA_MODEL)
+    except httpx.HTTPError as exc:
+        log.warning(json.dumps({"event": "ollama_error", "error": str(exc)}))
+        raise HTTPException(status_code=503, detail="The assistant is temporarily unavailable.")
+    log.info(json.dumps({"event": "ask", "lang": item.lang, "grounded": result["grounded"],
+                         "sources": len(result["sources"]), "question_chars": len(item.question)}))
+    return result

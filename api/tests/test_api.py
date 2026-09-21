@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import advisories  # noqa: E402
+import ask  # noqa: E402
 import main  # noqa: E402
 
 FEED_XML = b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -59,6 +60,7 @@ def no_network(monkeypatch):
     monkeypatch.setattr(main, "load_feed", fake_feed)
     monkeypatch.setattr(main, "load_index", fake_index)
     main._feedback_hits.clear()
+    main._ask_hits.clear()
 
 
 client = TestClient(main.app)
@@ -144,3 +146,76 @@ def test_feedback_rate_limit():
 def test_security_headers_present():
     h = client.get("/health").headers
     assert h["x-content-type-options"] == "nosniff" and h["x-frame-options"] == "DENY"
+
+
+# ---------- ask the embassy (grounded QA) ----------
+
+def fake_model(reply: str):
+    """A stand-in for Ollama that returns a fixed reply and records what it was asked."""
+    calls = []
+
+    async def chat(base_url, model, messages, timeout=60.0):
+        calls.append(messages)
+        return reply
+    chat.calls = calls
+    return chat
+
+
+def test_ask_declines_without_calling_the_model_when_nothing_matches(monkeypatch):
+    chat = fake_model("should never be used")
+    monkeypatch.setattr(ask, "ollama_chat", chat)
+    monkeypatch.setattr(main, "OLLAMA_URL", "http://127.0.0.1:11434")
+    r = client.post("/ask", json={"question": "What is the weather on Mars?"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["grounded"] is False and body["sources"] == [] and body["model"] is None
+    assert chat.calls == []                      # layer 1: no retrieval hit -> model not called
+
+
+def test_ask_returns_a_cited_answer_with_only_the_cited_sources(monkeypatch):
+    monkeypatch.setattr(ask, "ollama_chat", fake_model("You generally need a visa placed in your passport [1]."))
+    monkeypatch.setattr(main, "OLLAMA_URL", "http://127.0.0.1:11434")
+    body = client.post("/ask", json={"question": "Do I need a visa to enter the United States?"}).json()
+    assert body["grounded"] is True and "[1]" in body["answer"]
+    assert [s["url"] for s in body["sources"]] == ["/visas/"]
+
+
+def test_ask_replaces_an_uncited_answer_with_the_decline_text(monkeypatch):
+    monkeypatch.setattr(ask, "ollama_chat", fake_model("Visas cost $185 and take two weeks."))   # confident, no citation
+    monkeypatch.setattr(main, "OLLAMA_URL", "http://127.0.0.1:11434")
+    body = client.post("/ask", json={"question": "How much does a visa cost?"}).json()
+    assert body["grounded"] is False and "$185" not in body["answer"]     # layer 3: ungrounded answer never ships
+    assert body["sources"]                                                # ...but the closest pages are still offered
+
+
+def test_ask_honours_the_models_cannot_answer_signal(monkeypatch):
+    monkeypatch.setattr(ask, "ollama_chat", fake_model("CANNOT_ANSWER"))
+    monkeypatch.setattr(main, "OLLAMA_URL", "http://127.0.0.1:11434")
+    body = client.post("/ask", json={"question": "Which visa office has the shortest wait?"}).json()
+    assert body["grounded"] is False and body["answer"] == ask.DECLINE["en"]
+
+
+def test_ask_prompt_contains_only_retrieved_passages_and_the_rules(monkeypatch):
+    chat = fake_model("CANNOT_ANSWER")
+    monkeypatch.setattr(ask, "ollama_chat", chat)
+    monkeypatch.setattr(main, "OLLAMA_URL", "http://127.0.0.1:11434")
+    client.post("/ask", json={"question": "passport renewal", "lang": "en"})
+    system, user = chat.calls[0][0]["content"], chat.calls[0][1]["content"]
+    assert "ONLY the numbered passages" in system and "CANNOT_ANSWER" in system
+    assert "[1] American Citizens Services" in user and "ABŞ vizaları" not in user   # English only
+
+
+def test_ask_is_disabled_without_ollama_url(monkeypatch):
+    monkeypatch.setattr(main, "OLLAMA_URL", "")
+    assert client.get("/ask/status").json() == {"enabled": False, "model": None}
+    assert client.post("/ask", json={"question": "anything at all"}).status_code == 503
+
+
+def test_ask_validation_and_rate_limit(monkeypatch):
+    monkeypatch.setattr(ask, "ollama_chat", fake_model("CANNOT_ANSWER"))
+    monkeypatch.setattr(main, "OLLAMA_URL", "http://127.0.0.1:11434")
+    assert client.post("/ask", json={"question": "hi"}).status_code == 422          # too short
+    assert client.post("/ask", json={"question": "x" * 301}).status_code == 422     # too long
+    for _ in range(main.ASK_LIMIT_PER_HOUR):
+        assert client.post("/ask", json={"question": "visa question"}).status_code == 200
+    assert client.post("/ask", json={"question": "visa question"}).status_code == 429
