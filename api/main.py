@@ -34,7 +34,7 @@ import advisories
 
 # ---------- configuration (environment variables, with sensible defaults) ----------
 
-SITE_URL = os.environ.get("SITE_URL", "https://embassy-site-rebuild.sneakywun58.workers.dev").rstrip("/")
+SITE_URL = os.environ.get("SITE_URL", "https://embassy-site-rebuild.ashirz.workers.dev").rstrip("/")
 ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", f"{SITE_URL},http://localhost:4321").split(",") if o.strip()]
 FEED_CACHE_SECONDS = int(os.environ.get("FEED_CACHE_SECONDS", "3600"))
 SEARCH_CACHE_SECONDS = int(os.environ.get("SEARCH_CACHE_SECONDS", "900"))
