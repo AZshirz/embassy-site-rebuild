@@ -78,3 +78,19 @@ jobs:
           cache-dependency-path: api/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q
+
+  container:
+    name: API container boots (what Cloud Run runs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image exactly as Cloud Run does
+        run: docker build -t embassy-api api
+      - name: Start it and hit the health endpoints
+        run: |
+          docker run -d --rm -p 8080:8080 --name api embassy-api
+          for i in $(seq 1 20); do curl -sf http://localhost:8080/health && break; sleep 1; done
+          curl -sf http://localhost:8080/health
+          curl -sf http://localhost:8080/ask/status | grep -q '"enabled":false'
+          docker logs api
+          docker stop api
