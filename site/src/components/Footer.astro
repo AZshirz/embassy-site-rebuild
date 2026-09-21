@@ -1,0 +1,56 @@
+---
+// Footer with the required federal links and the USWDS "identifier" block.
+import type { Lang } from '../data/content';
+import { ui, embassy } from '../data/content';
+import EmergencyBox from './EmergencyBox.astro';
+const { lang } = Astro.props as { lang: Lang };
+const t = ui[lang];
+---
+<footer class="usa-footer usa-footer--slim site-footer">
+  <div class="grid-container usa-footer__return-to-top">
+    <a href="#top">{t.backToTop}</a>
+  </div>
+  <div class="grid-container padding-bottom-3">
+    <div class="grid-row grid-gap">
+      <div class="tablet:grid-col-6">
+        <EmergencyBox lang={lang} id="footer-emergency-heading" />
+      </div>
+      <div class="tablet:grid-col-6 padding-top-2">
+        <nav class="usa-footer__nav" aria-label={lang === 'en' ? 'Footer navigation' : 'Alt naviqasiya'}>
+          <ul class="usa-list usa-list--unstyled site-footer__links">
+            {t.footerLinks.map((l) => (
+              <li><a class="usa-footer__primary-link" href={l.href} rel="noopener">{l.label}</a></li>
+            ))}
+            <li><a class="usa-footer__primary-link" href={t.otherEmbassiesHref} rel="noopener">{t.otherEmbassies}</a></li>
+          </ul>
+        </nav>
+        <p class="font-body-3xs text-base-dark margin-top-2">
+          {t.lastReviewed}: <time datetime={embassy.contentReviewed}>{embassy.contentReviewed}</time>
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+<div class="usa-identifier">
+  <section class="usa-identifier__section usa-identifier__section--masthead" aria-label={lang === 'en' ? 'Agency identifier' : 'Qurum identifikatoru'}>
+    <div class="usa-identifier__container">
+      <div class="usa-identifier__logos">
+        <a href="https://www.state.gov/" class="usa-identifier__logo" rel="noopener">
+          <img class="usa-identifier__logo-img" src="/img/seal.svg" alt={t.identifierAgency} width="48" height="48" />
+        </a>
+      </div>
+      <section class="usa-identifier__identity" aria-label={lang === 'en' ? 'Agency description' : 'Qurum haqqında'}>
+        <p class="usa-identifier__identity-domain">az.usembassy.gov</p>
+        <p class="usa-identifier__identity-disclaimer">
+          {t.identifierIntro} <a href="https://www.state.gov/" rel="noopener">{t.identifierAgency}</a>
+        </p>
+      </section>
+    </div>
+  </section>
+  <section class="usa-identifier__section usa-identifier__section--usagov" aria-label={lang === 'en' ? 'U.S. government information and services' : 'ABŞ hökuməti məlumat və xidmətləri'}>
+    <div class="usa-identifier__container">
+      <div class="usa-identifier__usagov-description">{t.identifierRequired}</div>
+      <a href="https://www.usa.gov/" class="usa-link" rel="noopener">{t.identifierVisit}</a>
+    </div>
+  </section>
+</div>

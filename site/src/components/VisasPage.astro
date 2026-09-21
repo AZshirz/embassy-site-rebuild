@@ -1,0 +1,57 @@
+---
+import type { Lang } from '../data/content';
+import { visas, embassy } from '../data/content';
+import ContentPage from './ContentPage.astro';
+import CardGrid from './CardGrid.astro';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = visas[lang];
+---
+<ContentPage lang={lang} title={t.title} lead={t.lead} description={t.lead} path="/visas/">
+  <div class="usa-alert usa-alert--warning" id="notices">
+    <div class="usa-alert__body">
+      <h2 class="usa-alert__heading">{t.noticeTitle}</h2>
+      <ul class="usa-list">
+        {t.notices.map((n) => <li>{n}</li>)}
+      </ul>
+      <p><a class="usa-link usa-link--external" href={t.noticeMore.href} rel="noopener">{t.noticeMore.label}</a></p>
+    </div>
+  </div>
+
+  <h2 id="what-is-a-visa">{t.whatTitle}</h2>
+  {t.whatText.map((p) => <p>{p}</p>)}
+  <p><a class="usa-link usa-link--external" href={t.vwpLink.href} rel="noopener">{t.vwpLink.label}</a></p>
+
+  <h2 id="how-to-apply">{t.stepsTitle}</h2>
+  <ol class="usa-process-list">
+    {t.steps.map((s) => (
+      <li class="usa-process-list__item">
+        <h3 class="usa-process-list__heading">{s.title}</h3>
+        <p class="margin-top-05">{s.text}</p>
+      </li>
+    ))}
+  </ol>
+  <a class="usa-button" href={t.stepsLink.href} rel="noopener">{t.stepsLink.label}</a>
+
+  <h2 id="types">{t.typesTitle}</h2>
+  <CardGrid cards={t.types} />
+
+  <h2 id="contact">{t.contactTitle}</h2>
+  <p>{t.contactText}</p>
+  <ul class="usa-list">
+    <li><strong>{t.contactEmailLabel}:</strong> <a href={`mailto:${embassy.visaEmail}`}>{embassy.visaEmail}</a></li>
+    <li><strong>{t.contactAzLabel}:</strong> <a href={t.contactAzHref}>{t.contactAz}</a></li>
+    <li><strong>{t.contactUsLabel}:</strong> <a href={t.contactUsHref}>{t.contactUs}</a></li>
+  </ul>
+  <p><a class="usa-link usa-link--external" href={t.navigatorLink.href} rel="noopener">{t.navigatorLink.label}</a></p>
+
+  <h2 id="rights">{t.rightsTitle}</h2>
+  <CardGrid cards={t.rights} cols={2} />
+
+  <h2 id="resources">{t.resourcesTitle}</h2>
+  <ul class="usa-list">
+    {t.resources.map((r) => (
+      <li><a class="usa-link usa-link--external" href={r.href} rel="noopener">{r.label}</a></li>
+    ))}
+  </ul>
+</ContentPage>

@@ -1,0 +1,29 @@
+---
+import type { Lang } from '../data/content';
+import { citizens } from '../data/content';
+import ContentPage from './ContentPage.astro';
+import CardGrid from './CardGrid.astro';
+import EmergencyBox from './EmergencyBox.astro';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = citizens[lang];
+---
+<ContentPage lang={lang} title={t.title} lead={t.lead} description={t.lead} path="/citizen-services/">
+  <div class="usa-alert usa-alert--info usa-alert--slim">
+    <div class="usa-alert__body">
+      <p class="usa-alert__text">
+        {t.navigatorText}
+        <a class="usa-link" href={t.navigatorLink.href} rel="noopener">{t.navigatorLink.label}</a>
+      </p>
+    </div>
+  </div>
+
+  {t.sections.map((s) => (
+    <>
+      <h2 id={s.id}>{s.title}</h2>
+      {s.id === 'emergency' && <EmergencyBox lang={lang} headingLevel="h3" id="acs-emergency-heading" />}
+      {s.intro && <p>{s.intro}</p>}
+      <CardGrid cards={s.cards} cols={2} />
+    </>
+  ))}
+</ContentPage>

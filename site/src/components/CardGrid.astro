@@ -1,0 +1,22 @@
+---
+// A responsive grid of USWDS cards. Each card has a heading, a sentence, and one clear action.
+import type { Card } from '../data/content';
+const { cards, headingLevel = 'h3', cols = 3 } = Astro.props as { cards: Card[]; headingLevel?: 'h2' | 'h3' | 'h4'; cols?: 2 | 3 };
+const Heading = headingLevel;
+const colClass = cols === 2 ? 'tablet:grid-col-6' : 'tablet:grid-col-6 desktop:grid-col-4';
+---
+<ul class="usa-card-group">
+  {cards.map((c) => (
+    <li class:list={['usa-card', colClass]}>
+      <div class="usa-card__container">
+        <div class="usa-card__header"><Heading class="usa-card__heading">{c.title}</Heading></div>
+        <div class="usa-card__body"><p>{c.text}</p></div>
+        <div class="usa-card__footer">
+          <a class="usa-button usa-button--outline" href={c.link.href} rel={c.link.external ? 'noopener' : undefined}>
+            {c.link.label}
+          </a>
+        </div>
+      </div>
+    </li>
+  ))}
+</ul>

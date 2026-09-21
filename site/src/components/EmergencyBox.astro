@@ -1,0 +1,21 @@
+---
+// Emergency contact summary. Phone numbers are real tel: links so they work on a phone.
+import type { Lang } from '../data/content';
+import { ui, embassy } from '../data/content';
+const { lang, headingLevel = 'h2', id = 'emergency-heading' } = Astro.props as { lang: Lang; headingLevel?: 'h2' | 'h3'; id?: string };
+const t = ui[lang].emergency;
+const Heading = headingLevel;
+---
+<div class="usa-summary-box site-emergency" role="region" aria-labelledby={id}>
+  <div class="usa-summary-box__body">
+    <Heading class="usa-summary-box__heading" id={id}>{t.title}</Heading>
+    <div class="usa-summary-box__text">
+      <ul class="usa-list usa-list--unstyled">
+        <li><strong>{t.inAz}:</strong> <a href={embassy.phoneHref}>{embassy.phone}</a></li>
+        <li><strong>{t.afterHours}:</strong> <a href={embassy.afterHoursHref}>{embassy.afterHoursPhone}</a></li>
+        <li><strong>{t.fromUs}:</strong> <a href={embassy.fromUsHref}>{embassy.fromUsPhone}</a></li>
+      </ul>
+      <a href={t.moreHref} class="usa-link">{t.more}</a>
+    </div>
+  </div>
+</div>

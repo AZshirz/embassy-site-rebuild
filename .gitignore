@@ -1,0 +1,15 @@
+# Saved copies of the original site (36 MB of assets) - keep local only
+Source/*_files/
+# Node / Astro
+node_modules/
+site/dist/
+site/.astro/
+# Python
+__pycache__/
+.venv/
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+site/public/uswds/
+audit/screenshots/

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Emblem">
+  <!-- Placeholder emblem for the demo. Not the official seal of the Department of State. -->
+  <circle cx="32" cy="32" r="30" fill="#162e51"/>
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#fff" stroke-width="1.5"/>
+  <polygon points="32,12 36.7,24.6 50,25.2 39.6,33.6 43.2,46.4 32,39 20.8,46.4 24.4,33.6 14,25.2 27.3,24.6" fill="#fff"/>
+  <rect x="17" y="49" width="30" height="3" fill="#b50909"/>
+</svg>

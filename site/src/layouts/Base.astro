@@ -1,0 +1,93 @@
+---
+// Base layout: everything shared by every page. Pages only provide <main> content.
+import type { Lang } from '../data/content';
+import { ui, embassy } from '../data/content';
+import GovBanner from '../components/GovBanner.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** Path of this page without the language prefix, e.g. "/visas/" */
+  path: string;
+}
+const { lang, title, description, path } = Astro.props;
+const t = ui[lang];
+
+// Same page in each language, for the <link hreflang> tags and the language switch.
+const enPath = path;
+const azPath = path === '/' ? '/az/' : `/az${path}`;
+const currentPath = lang === 'en' ? enPath : azPath;
+const site = Astro.site?.origin ?? '';
+
+// Structured data so search engines understand this is a government office with hours.
+const openingHours = embassy.hours
+  .map((h, i) => (h ? { day: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'][i], ...h } : null))
+  .filter(Boolean)
+  .map((h) => `${h!.day} ${h!.open}-${h!.close}`);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'GovernmentOffice',
+  name: t.siteName,
+  telephone: embassy.phone,
+  faxNumber: embassy.fax,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: embassy.address.street,
+    postalCode: embassy.address.postal,
+    addressLocality: embassy.address.city,
+    addressCountry: 'AZ',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: embassy.geo.lat, longitude: embassy.geo.lng },
+  openingHours,
+  url: site + currentPath,
+};
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Defense-in-depth: a CSP here backs up the one sent as an HTTP header (see public/_headers). -->
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+    <title>{title} | {t.siteName}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#162e51" />
+    <link rel="canonical" href={site + currentPath} />
+    <link rel="alternate" hreflang="en" href={site + enPath} />
+    <link rel="alternate" hreflang="az" href={site + azPath} />
+    <link rel="alternate" hreflang="x-default" href={site + enPath} />
+    <link rel="icon" href="/uswds/img/favicons/favicon.ico" sizes="any" />
+    <link rel="icon" href="/img/seal.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/uswds/css/uswds.min.css" />
+    <link rel="stylesheet" href="/css/site.css" />
+    <script src="/uswds/js/uswds-init.min.js" is:inline></script>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+  </head>
+  <body id="top">
+    <a class="usa-skipnav" href="#main-content">{t.skip}</a>
+
+    <div class="site-demo-notice" role="note">
+      <div class="grid-container">
+        {lang === 'en'
+          ? <>Unofficial portfolio demonstration — not affiliated with the U.S. Department of State. The official site is <a href={embassy.originalSite} rel="noopener">az.usembassy.gov</a>.</>
+          : <>Qeyri-rəsmi portfolio nümunəsi — ABŞ Dövlət Departamenti ilə əlaqəsi yoxdur. Rəsmi sayt: <a href={embassy.originalSite} rel="noopener">az.usembassy.gov</a>.</>}
+      </div>
+    </div>
+
+    <GovBanner lang={lang} />
+    <Header lang={lang} currentPath={currentPath} />
+
+    <main id="main-content" class="site-main">
+      <slot />
+    </main>
+
+    <Footer lang={lang} />
+
+    <script src="/uswds/js/uswds.min.js" is:inline></script>
+    <script src="/js/site.js" defer is:inline></script>
+  </body>
+</html>

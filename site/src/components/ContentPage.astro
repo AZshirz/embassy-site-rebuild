@@ -1,0 +1,29 @@
+---
+// Two-column layout for long content pages: USWDS in-page navigation on the left
+// (built from the h2 headings by USWDS JS), content on the right.
+import type { Lang } from '../data/content';
+import { ui } from '../data/content';
+import Base from '../layouts/Base.astro';
+import PageHeading from './PageHeading.astro';
+
+const { lang, title, lead, description, path } = Astro.props as {
+  lang: Lang; title: string; lead: string; description: string; path: string;
+};
+const u = ui[lang];
+---
+<Base lang={lang} title={title} description={description} path={path}>
+  <div class="grid-container">
+    <PageHeading title={title} lead={lead} />
+  </div>
+  <div class="grid-container">
+    <div class="usa-in-page-nav-container">
+      <aside class="usa-in-page-nav"
+        data-title-text={u.onThisPage} data-title-heading-level="h2"
+        data-heading-elements="h2" data-main-content-selector=".site-content"
+        data-scroll-offset="0" data-root-margin="0px 0px 0px 0px" data-threshold="1"></aside>
+      <div class="site-content usa-prose padding-bottom-5">
+        <slot />
+      </div>
+    </div>
+  </div>
+</Base>

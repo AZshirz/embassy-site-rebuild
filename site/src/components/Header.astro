@@ -1,0 +1,52 @@
+---
+// Site header: logo, ONE primary nav (rendered once and made responsive with CSS,
+// instead of the original's separate desktop + mobile copies), language switch, emergency button.
+import type { Lang } from '../data/content';
+import { ui } from '../data/content';
+const { lang, currentPath } = Astro.props as { lang: Lang; currentPath: string };
+const t = ui[lang];
+const otherLang: Lang = lang === 'en' ? 'az' : 'en';
+const isCurrent = (href: string) => href === currentPath;
+---
+<header class="usa-header usa-header--basic site-header">
+  <div class="usa-nav-container">
+    <div class="usa-navbar">
+      <div class="usa-logo">
+        <em class="usa-logo__text">
+          <a href={t.primaryNav[0].href} title={t.siteName}>
+            <img src="/img/seal.svg" alt="" width="40" height="40" class="site-seal" />
+            {t.siteName}
+          </a>
+        </em>
+      </div>
+      <button type="button" class="usa-menu-btn">{t.menu}</button>
+    </div>
+    <nav aria-label={lang === 'en' ? 'Primary navigation' : 'Əsas naviqasiya'} class="usa-nav">
+      <button type="button" class="usa-nav__close">
+        <img src="/uswds/img/usa-icons/close.svg" role="img" alt={lang === "en" ? "Close" : "Bağla"} width="24" height="24" />
+      </button>
+      <ul class="usa-nav__primary usa-accordion">
+        {t.primaryNav.map((item) => (
+          <li class="usa-nav__primary-item">
+            <a href={item.href} class:list={['usa-nav-link', { 'usa-current': isCurrent(item.href) }]}
+               aria-current={isCurrent(item.href) ? 'page' : undefined}>
+              <span>{item.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div class="usa-nav__secondary">
+        <ul class="usa-nav__secondary-links">
+          <li class="usa-nav__secondary-item">
+            <a href={t.langSwitchHref} lang={otherLang} hreflang={otherLang}>{t.langSwitchLabel}</a>
+          </li>
+          <li class="usa-nav__secondary-item">
+            <a href={t.emergency.moreHref} class="usa-button usa-button--secondary site-emergency-btn">
+              {t.emergencyButton}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </div>
+</header>

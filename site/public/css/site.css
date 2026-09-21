@@ -1,0 +1,156 @@
+/* Site-specific styles layered on top of USWDS. Kept deliberately small:
+   USWDS provides the components; this file only handles layout glue and branding. */
+
+:root {
+  --site-navy: #162e51;   /* USWDS "primary-darker" */
+  --site-blue: #005ea2;   /* USWDS "primary" */
+  --site-red:  #b50909;   /* USWDS "secondary-dark" */
+}
+
+body {
+  background: #fff;
+}
+
+/* Persistent notice that this is a portfolio rebuild, not the real site */
+.site-demo-notice {
+  background: #fff8e1;
+  border-bottom: 1px solid #e5c56f;
+  color: #3d2b00;
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+}
+
+/* Header */
+.site-header {
+  border-bottom: 4px solid var(--site-navy);
+}
+.site-header .usa-logo a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.site-seal {
+  flex: none;
+}
+.site-emergency-btn {
+  margin: 0;
+  padding: 0.5rem 1rem;
+}
+@media (min-width: 64em) {
+  .usa-nav__secondary-links .usa-nav__secondary-item {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* Hero */
+.site-hero {
+  background: var(--site-navy);
+  color: #fff;
+  padding: 3rem 0;
+}
+.site-hero h1 {
+  color: #fff;
+  margin: 0 0 0.75rem;
+  font-size: 2.25rem;       /* phones: long Azerbaijani words must fit */
+  overflow-wrap: anywhere;
+}
+@media (min-width: 40em) {
+  .site-hero h1 {
+    font-size: 3rem;
+  }
+}
+.site-hero p {
+  color: #dfe1e2;
+  font-size: 1.2rem;
+  max-width: 40rem;
+  margin: 0;
+}
+
+/* Sections */
+.site-section {
+  padding: 2.5rem 0;
+}
+.site-section--alt {
+  background: #f0f0f0;
+}
+.site-section h2 {
+  margin-top: 0;
+}
+
+/* Emergency summary box: red accent instead of the default blue */
+.site-emergency.usa-summary-box {
+  background: #fdf2f2;
+  border-color: var(--site-red);
+}
+.site-emergency .usa-summary-box__heading {
+  color: var(--site-red);
+}
+
+/* Opening hours table + live status */
+.site-hours td,
+.site-hours th {
+  padding: 0.25rem 0.75rem 0.25rem 0;
+}
+.site-hours-status {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.site-hours-status--open {
+  background: #ecf3ec;
+  color: #00a91c;
+}
+.site-hours-status--closed {
+  background: #f4e3db;
+  color: #b50909;
+}
+
+/* Leaders */
+.site-leader {
+  border-left: 4px solid var(--site-blue);
+  padding-left: 1rem;
+  margin-bottom: 1.5rem;
+}
+.site-leader h3 {
+  margin: 0;
+}
+.site-leader .site-leader__role {
+  color: #565c65;
+  margin: 0 0 0.5rem;
+}
+
+/* Footer */
+.site-footer {
+  background: #f0f0f0;
+}
+.site-footer__links li {
+  margin-bottom: 0.5rem;
+}
+
+/* Content pages: two-column layout with in-page navigation */
+.site-page-heading {
+  padding: 2rem 0 0.5rem;
+}
+.site-content h2 {
+  scroll-margin-top: 1rem;
+}
+
+/* Print: drop chrome, keep content and phone numbers */
+@media print {
+  .site-demo-notice, .usa-banner, .usa-menu-btn, .usa-nav, .usa-footer__return-to-top,
+  .usa-identifier, .usa-in-page-nav {
+    display: none !important;
+  }
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+  }
+}
+
+/* Tighter footer link list */
+.site-footer__links .usa-footer__primary-link {
+  padding: 0.25rem 0;
+}

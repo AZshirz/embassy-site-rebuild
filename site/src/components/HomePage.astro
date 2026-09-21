@@ -1,0 +1,116 @@
+---
+import type { Lang } from '../data/content';
+import { ui, home, embassy } from '../data/content';
+import Base from '../layouts/Base.astro';
+import CardGrid from './CardGrid.astro';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = home[lang];
+const u = ui[lang];
+
+// Opening hours as "HH:MM-HH:MM" or "closed", Monday first, for the live status badge.
+const hoursAttr = embassy.hours.map((h) => (h ? `${h.open}-${h.close}` : 'closed')).join(',');
+const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${embassy.geo.lng}#map=17/${embassy.geo.lat}/${embassy.geo.lng}`;
+---
+<Base lang={lang} title={t.title} description={t.heroText} path="/">
+  <section class="site-hero" aria-labelledby="hero-heading">
+    <div class="grid-container">
+      <h1 id="hero-heading" class="font-heading-3xl">{t.heroTitle}</h1>
+      <p>{t.heroText}</p>
+    </div>
+  </section>
+
+  <section class="site-section" aria-labelledby="needs-heading">
+    <div class="grid-container">
+      <h2 id="needs-heading">{t.needTitle}</h2>
+      <CardGrid cards={t.needs} />
+    </div>
+  </section>
+
+  <section class="site-section site-section--alt" id="contact" aria-labelledby="contact-heading">
+    <div class="grid-container">
+      <h2 id="contact-heading">{t.contactTitle}</h2>
+      <div class="grid-row grid-gap-lg">
+        <div class="tablet:grid-col-6">
+          <h3>{t.addressLabel}</h3>
+          <address class="font-body-md" style="font-style: normal">
+            {embassy.name}<br />
+            {embassy.address.street}<br />
+            {embassy.address.postal} {embassy.address.city}, {embassy.address.country}
+          </address>
+          <p><a class="usa-link" href={mapHref} rel="noopener">{t.mapLink}</a></p>
+
+          <h3>{t.phoneLabel}</h3>
+          <p><a href={embassy.phoneHref}>{embassy.phone}</a></p>
+          <h3>{t.faxLabel}</h3>
+          <p>{embassy.fax}</p>
+
+          <h3>{t.followLabel}</h3>
+          <ul class="usa-list usa-list--unstyled">
+            {embassy.social.map((s) => (
+              <li><a class="usa-link usa-link--external" href={s.href} rel="noopener">{s.label}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="tablet:grid-col-6">
+          <h3>
+            {u.hours.title}
+            <span class="site-hours-status margin-left-1" hidden
+              data-hours-status data-hours={hoursAttr} data-timezone={embassy.timezone}
+              data-open-label={u.hours.openNow} data-closed-label={u.hours.closedNow}></span>
+          </h3>
+          <table class="usa-table usa-table--borderless site-hours">
+            <caption class="usa-sr-only">{u.hours.title}</caption>
+            <thead class="usa-sr-only"><tr><th scope="col">Day</th><th scope="col">Hours</th></tr></thead>
+            <tbody>
+              {embassy.hours.map((h, i) => (
+                <tr>
+                  <th scope="row">{u.hours.days[i]}</th>
+                  <td>{h ? `${h.open} – ${h.close}` : u.hours.closed}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p class="font-body-2xs text-base-dark">{u.hours.timezone}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="site-section" aria-labelledby="leaders-heading">
+    <div class="grid-container">
+      <h2 id="leaders-heading">{t.leadersTitle}</h2>
+      <div class="grid-row grid-gap-lg">
+        {t.leaders.map((l) => (
+          <div class="tablet:grid-col-6">
+            <div class="site-leader">
+              <h3>{l.name}</h3>
+              <p class="site-leader__role">{l.role}</p>
+              <p>{l.bio}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="site-section site-section--alt" aria-labelledby="reports-heading">
+    <div class="grid-container">
+      <div class="grid-row grid-gap-lg">
+        <div class="tablet:grid-col-6">
+          <h2 id="reports-heading">{t.reportsTitle}</h2>
+          <ul class="usa-list">
+            {t.reports.map((r) => (
+              <li><a class="usa-link usa-link--external" href={r.href} rel="noopener">{r.label}</a></li>
+            ))}
+          </ul>
+        </div>
+        <div class="tablet:grid-col-6">
+          <h2>{t.policyTitle}</h2>
+          <p>{t.policyText}</p>
+          <a class="usa-button usa-button--outline" href={t.policyLink.href} rel="noopener">{t.policyLink.label}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
