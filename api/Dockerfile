@@ -1,7 +1,6 @@
-# Container for the API. Built from the REPOSITORY ROOT so it can include the site's alerts.json:
-#   docker build -f api/Dockerfile -t embassy-api .
-#   docker run --rm -p 8080:8080 embassy-api
-# Cloud Run runs the same image and sets PORT=8080.
+# Container for the API. Build context is this folder:
+#   cd api && docker build -t embassy-api . && docker run --rm -p 8080:8080 embassy-api
+# Cloud Run builds the same image from the repository (source location: /api) and sets PORT=8080.
 
 FROM python:3.13-slim
 
@@ -9,11 +8,11 @@ FROM python:3.13-slim
 RUN useradd --create-home --uid 1000 app
 WORKDIR /app
 
-COPY api/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY api/advisories.py api/main.py ./
-COPY site/src/data/alerts.json ./data/alerts.json
+COPY advisories.py main.py ./
+COPY data/ ./data/
 
 USER app
 ENV PORT=8080 PYTHONUNBUFFERED=1

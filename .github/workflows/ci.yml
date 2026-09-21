@@ -1,0 +1,80 @@
+# Runs on every push and pull request. Two independent jobs:
+#   site: build the static site, then fail if accessibility regresses (HTML audit + Lighthouse)
+#   api:  run the FastAPI test suite
+# Cloudflare deploys separately from `main`; a red run here is the signal to look before it goes live.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    name: Build site + accessibility gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+        env:
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'http://localhost:8000' }}
+
+      - name: HTML structure audit (fails on regressions)
+        working-directory: .
+        run: |
+          pip install --quiet beautifulsoup4 lxml
+          python tools/audit.py --gate
+
+      - name: Lighthouse gate (accessibility 100, best practices and SEO >= 90)
+        working-directory: .
+        run: |
+          (cd site && npx astro preview --port 4321 &)
+          sleep 5
+          node tools/lighthouse-gate.mjs http://localhost:4321/ http://localhost:4321/visas/ http://localhost:4321/az/citizen-services/
+
+      - name: Keep the reports as a build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-reports
+          path: |
+            audit/report.md
+            audit/lighthouse-ci/*.json
+          retention-days: 14
+
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: api/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q

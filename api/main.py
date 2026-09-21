@@ -39,9 +39,8 @@ ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", f"{SITE_
 FEED_CACHE_SECONDS = int(os.environ.get("FEED_CACHE_SECONDS", "3600"))
 SEARCH_CACHE_SECONDS = int(os.environ.get("SEARCH_CACHE_SECONDS", "900"))
 FEEDBACK_LIMIT_PER_HOUR = int(os.environ.get("FEEDBACK_LIMIT_PER_HOUR", "5"))
-# The site's alerts.json: copied to api/data/ by the Dockerfile, read from the repo when running locally.
-_HERE = Path(__file__).resolve().parent
-BUNDLED_ALERTS = next((p for p in (_HERE / "data" / "alerts.json", _HERE.parent / "site" / "src" / "data" / "alerts.json") if p.is_file()), _HERE / "data" / "alerts.json")
+# Fallback copy of the site's alerts.json (tools/fetch_alerts.py keeps both files in sync).
+BUNDLED_ALERTS = Path(__file__).resolve().parent / "data" / "alerts.json"
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("api")

@@ -13,6 +13,6 @@ Thumbs.db
 .vscode/
 site/public/uswds/
 audit/screenshots/
-api/data/
 __pycache__/
 .pytest_cache/
+audit/lighthouse-ci/

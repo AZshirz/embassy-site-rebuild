@@ -6,7 +6,7 @@ Usage:
     python tools/fetch_alerts.py --dry-run  # report what would change, write nothing
 
 Reads:  https://travel.state.gov/_res/rss/TAsTWs.xml  (every country's current advisory, ~220 items)
-Writes: site/src/data/alerts.json  (only when something actually changed)
+Writes: site/src/data/alerts.json and api/data/alerts.json  (only when something actually changed)
 
 Azerbaijan's advisory changes a few times a year at most, so most runs find nothing new
 and exit without touching the file. The GitHub Actions workflow commits the file only if this
@@ -33,6 +33,7 @@ import advisories  # noqa: E402  (shared parser)
 
 COUNTRY = "Azerbaijan"
 DATA_FILE = ROOT / "site" / "src" / "data" / "alerts.json"
+API_COPY = ROOT / "api" / "data" / "alerts.json"   # the API ships a fallback copy; keep it identical
 CHANGE_FIELDS = ("level", "published")                     # what decides "something changed"
 COPY_FIELDS = ("level", "title", "link", "published", "summary")   # what gets refreshed when it did
 
@@ -80,8 +81,10 @@ def main(argv: list[str]) -> int:
     if dry_run:
         print("Dry run: file not written.")
     else:
-        DATA_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"Wrote {DATA_FILE}")
+        text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+        for path in (DATA_FILE, API_COPY):
+            path.write_text(text, encoding="utf-8")
+            print(f"Wrote {path}")
     return 0
 
 

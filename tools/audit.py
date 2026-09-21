@@ -199,6 +199,35 @@ def main() -> None:
     (OUT_DIR / "report.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
 
+    if "--gate" in sys.argv:
+        failures = gate(results)
+        if failures:
+            print("\nACCESSIBILITY GATE FAILED:")
+            for f in failures:
+                print("  -", f)
+            sys.exit(1)
+        print("\nAccessibility gate passed: every rebuilt page has one h1, no empty/skipped headings, "
+              "no images without alt, no duplicated content, no inline scripts.")
+
+
+def gate(results: list[PageAudit]) -> list[str]:
+    """Rules every REBUILT page must satisfy. Returns a list of human-readable failures."""
+    failures = []
+    for r in results:
+        if r.version != "rebuild":
+            continue
+        checks = [
+            (r.h1_count == 1, f"{r.page}: expected exactly 1 <h1>, found {r.h1_count}"),
+            (r.empty_headings == 0, f"{r.page}: {r.empty_headings} empty heading(s)"),
+            (r.heading_level_skips == 0, f"{r.page}: {r.heading_level_skips} heading level skip(s)"),
+            (r.images_missing_alt == 0, f"{r.page}: {r.images_missing_alt} image(s) without an alt attribute"),
+            (r.duplicate_text_blocks == 0, f"{r.page}: {r.duplicate_text_blocks} duplicated text block(s)"),
+            (r.inline_scripts == 0, f"{r.page}: {r.inline_scripts} inline <script> block(s) (breaks the CSP)"),
+            (r.has_lang and r.has_skip_link and r.has_main, f"{r.page}: missing lang attribute, skip link, or <main>"),
+        ]
+        failures += [msg for ok, msg in checks if not ok]
+    return failures
+
 
 if __name__ == "__main__":
     main()

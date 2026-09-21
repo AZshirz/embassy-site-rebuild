@@ -1,6 +1,0 @@
-# Only api/ and one JSON file are needed in the image; keep everything else out of the build context.
-*
-!api/
-!site/src/data/alerts.json
-api/tests/
-api/__pycache__/
