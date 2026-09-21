@@ -1,10 +1,30 @@
 ---
-// Site-wide alert strip (travel advisory level, worldwide caution). Uses the USWDS "site alert"
-// pattern in its slim, heading-less form so it never disturbs the page's heading outline.
-import type { Lang } from '../data/content';
-import { alerts } from '../data/content';
+// Site-wide alert strip (travel advisory level, worldwide caution). Data comes from alerts.json,
+// which tools/fetch_alerts.py keeps current; wording per language comes from content.ts.
+// Uses the USWDS "site alert" pattern in its slim, heading-less form so it never disturbs the
+// page's heading outline.
+import type { Lang, SiteAlert } from '../data/content';
+import { alertText } from '../data/content';
+import alerts from '../data/alerts.json';
+
 const { lang } = Astro.props as { lang: Lang };
-const items = alerts[lang];
+const t = alertText[lang];
+const items: SiteAlert[] = [
+  {
+    kind: 'advisory',
+    label: t.levelLabel(alerts.advisory.level),
+    text: t.levelText[alerts.advisory.level] ?? alerts.advisory.title,
+    link: { label: t.advisoryLink, href: alerts.advisory.link, external: true },
+  },
+];
+if (alerts.worldwide_caution.active) {
+  items.push({
+    kind: 'caution',
+    label: t.cautionLabel,
+    text: t.cautionText,
+    link: { label: t.cautionLink, href: alerts.worldwide_caution.link, external: true },
+  });
+}
 ---
 {items.map((a) => (
   <section class:list={['usa-site-alert', 'usa-site-alert--slim', 'usa-site-alert--info', { 'site-alert--caution': a.kind === 'caution' }]}
@@ -14,6 +34,7 @@ const items = alerts[lang];
         <p class="usa-alert__text">
           <strong>{a.label}:</strong>{' '}{a.text}{' '}
           <a class="usa-link" href={a.link.href} rel="noopener">{a.link.label}</a>
+          {a.kind === 'advisory' && <span class="site-alert__meta"> · {t.updated} <time datetime={alerts.advisory.published}>{alerts.advisory.published}</time></span>}
         </p>
       </div>
     </div>

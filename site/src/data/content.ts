@@ -136,24 +136,31 @@ export const ui = {
 } as const;
 
 // ---------- Site-wide alerts (shown under the header on every page) ----------
-// In Phase 2 these come from a scheduled job that reads the travel.state.gov advisory feed;
-// for now they mirror what the original site showed on 2026-09-20.
+// The DATA (level, link, date) lives in alerts.json and is refreshed daily by tools/fetch_alerts.py
+// from the travel.state.gov feed. Only the WORDING lives here, keyed by advisory level, so the
+// automated update never has to touch prose in either language.
 
 export interface SiteAlert { kind: 'advisory' | 'caution'; label: string; text: string; link: Link }
 
-export const alerts: Record<Lang, SiteAlert[]> = {
-  en: [
-    { kind: 'advisory', label: 'Travel Advisory Level 3', text: 'Reconsider travel to Azerbaijan.',
-      link: { label: 'Read the advisory', href: 'https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/azerbaijan-travel-advisory.html', external: true } },
-    { kind: 'caution', label: 'Worldwide Caution', text: 'The Department of State advises Americans worldwide to exercise increased caution.',
-      link: { label: 'Read the worldwide caution', href: 'https://travel.state.gov/content/travel/en/traveladvisories/ea/worldwide-caution.html', external: true } },
-  ],
-  az: [
-    { kind: 'advisory', label: 'Səyahət xəbərdarlığı: 3-cü səviyyə', text: 'Azərbaycana səyahəti yenidən nəzərdən keçirin.',
-      link: { label: 'Xəbərdarlığı oxuyun', href: 'https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/azerbaijan-travel-advisory.html', external: true } },
-    { kind: 'caution', label: 'Qlobal xəbərdarlıq', text: 'Dövlət Departamenti bütün dünyadakı amerikalılara artan ehtiyatlılıq göstərməyi tövsiyə edir.',
-      link: { label: 'Qlobal xəbərdarlığı oxuyun', href: 'https://travel.state.gov/content/travel/en/traveladvisories/ea/worldwide-caution.html', external: true } },
-  ],
+export const alertText = {
+  en: {
+    levelLabel: (level: number) => `Travel Advisory Level ${level}`,
+    levelText: { 1: 'Exercise normal precautions in Azerbaijan.', 2: 'Exercise increased caution in Azerbaijan.', 3: 'Reconsider travel to Azerbaijan.', 4: 'Do not travel to Azerbaijan.' } as Record<number, string>,
+    advisoryLink: 'Read the advisory',
+    cautionLabel: 'Worldwide Caution',
+    cautionText: 'The Department of State advises Americans worldwide to exercise increased caution.',
+    cautionLink: 'Read the worldwide caution',
+    updated: 'Updated',
+  },
+  az: {
+    levelLabel: (level: number) => `Səyahət xəbərdarlığı: ${level}-${level === 1 ? 'ci' : level === 2 ? 'ci' : level === 3 ? 'cü' : 'cü'} səviyyə`,
+    levelText: { 1: 'Azərbaycanda adi ehtiyat tədbirlərinə əməl edin.', 2: 'Azərbaycanda artan ehtiyatlılıq göstərin.', 3: 'Azərbaycana səyahəti yenidən nəzərdən keçirin.', 4: 'Azərbaycana səyahət etməyin.' } as Record<number, string>,
+    advisoryLink: 'Xəbərdarlığı oxuyun',
+    cautionLabel: 'Qlobal xəbərdarlıq',
+    cautionText: 'Dövlət Departamenti bütün dünyadakı amerikalılara artan ehtiyatlılıq göstərməyi tövsiyə edir.',
+    cautionLink: 'Qlobal xəbərdarlığı oxuyun',
+    updated: 'Yenilənib',
+  },
 };
 
 // ---------- Facts that do not change with language ----------

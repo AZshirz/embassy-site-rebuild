@@ -250,3 +250,9 @@ body {
 .site-footer__links .usa-footer__primary-link {
   padding: 0.25rem 0;
 }
+
+.site-alert__meta {
+  color: #565c65;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}

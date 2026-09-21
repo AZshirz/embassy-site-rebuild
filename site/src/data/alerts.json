@@ -1,0 +1,17 @@
+{
+  "updated": "2026-09-21",
+  "source": "https://travel.state.gov/_res/rss/TAsTWs.xml",
+  "advisory": {
+    "country": "AZ",
+    "level": 3,
+    "title": "Azerbaijan - Level 3: Reconsider Travel",
+    "link": "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/azerbajian-travel-advisory.html",
+    "published": "2026-04-28",
+    "summary": "Reconsider Travel to Azerbaijan due to terrorism, armed conflict, and risk of landmines."
+  },
+  "worldwide_caution": {
+    "active": true,
+    "link": "https://travel.state.gov/content/travel/en/traveladvisories/ea/worldwide-caution.html",
+    "published": "2026-09-20"
+  }
+}
