@@ -3,6 +3,7 @@ import type { Lang } from '../data/content';
 import { ui, home, embassy } from '../data/content';
 import Base from '../layouts/Base.astro';
 import CardGrid from './CardGrid.astro';
+import LeaderList from './LeaderList.astro';
 
 const { lang } = Astro.props as { lang: Lang };
 const t = home[lang];
@@ -132,21 +133,10 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
   <section class="site-section site-section--alt" aria-labelledby="leaders-heading">
     <div class="grid-container">
       <h2 id="leaders-heading">{t.leadersTitle}</h2>
-      <div class="grid-row grid-gap-lg">
-        {t.leaders.map((l) => (
-          <div class="tablet:grid-col-6">
-            <div class="site-leader">
-              <img class="site-leader__photo" src={embassy.photos.leaders[l.name]} alt={`${l.name}, ${l.role}`}
-                width="160" height="160" loading="lazy" decoding="async" />
-              <div>
-                <h3>{l.name}</h3>
-                <p class="site-leader__role">{l.role}</p>
-                <p>{l.bio}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <h3>{t.missionLeadersTitle}</h3>
+      <LeaderList leaders={t.leaders} biographyLabel={t.biographyLabel} />
+      <h3 class="margin-top-4">{t.governmentLeadersTitle}</h3>
+      <LeaderList leaders={t.governmentLeaders} biographyLabel={t.biographyLabel} cols={3} />
     </div>
   </section>
 

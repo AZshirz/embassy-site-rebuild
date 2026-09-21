@@ -30,6 +30,21 @@ PHOTOS = [
     ("2025_TIP_Report_Cover_Sept25_REBRAND.jpg", "report-tip", [240],      None),
     ("humanrightsreport2020_v3.png",          "report-hrr",   [240],       None),
     ("IRF-Report-Cover-2023.png",             "report-irf",   [240],       None),
+    # U.S. government leaders: official portraits
+    ("Donald-J-Trump-600x600-2.png",          "trump",        [320],       (1, 1)),
+    ("JD-Vance-copy-600x600-2.png",           "vance",        [320],       (1, 1)),
+    ("Marco-Rubio-600x600-1.jpg",             "rubio",        [320],       (1, 1)),
+]
+
+# Embassy-produced visa-tip graphics from the Visas page (text is re-typed on the page; these are illustration only)
+VISA_SRC = ROOT / "Source" / "Visas - U.S. Embassy in Azerbaijan - Use our new U.S. Visa Wizard!_files"
+VISA_TIPS = [
+    ("visa-advance.jpg",       "tip-advance",       [480], (3, 2)),
+    ("visa-documents.jpg",     "tip-documents",     [480], (3, 2)),
+    ("visa-expiration.jpg",    "tip-expiration",    [480], (3, 2)),
+    ("visa-fraud.jpg",         "tip-fraud",         [480], (3, 2)),
+    ("visa-impersonation.jpg", "tip-impersonation", [480], (3, 2)),
+    ("visa-photo.jpg",         "tip-photo",         [480], (3, 2)),
 ]
 
 QUALITY = 78
@@ -38,8 +53,9 @@ QUALITY = 78
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     total_in = total_out = 0
-    for src_name, out_name, widths, aspect in PHOTOS:
-        src = SRC / src_name
+    jobs = [(SRC, *p) for p in PHOTOS] + [(VISA_SRC, *p) for p in VISA_TIPS]
+    for src_dir, src_name, out_name, widths, aspect in jobs:
+        src = src_dir / src_name
         if not src.is_file():
             print(f"skip (missing): {src_name}")
             continue

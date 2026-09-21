@@ -192,7 +192,10 @@ export const embassy = {
   // Photos are official U.S. Government work from the original site, resized by tools/optimize_images.py
   photos: {
     hero: { base: '/img/photos/hero-azeta', widths: [800, 1600], width: 1600, height: 700 },
-    leaders: { 'Amy Carlon': '/img/photos/carlon-320.webp', 'Sujata Sharma': '/img/photos/sharma-320.webp' } as Record<string, string>,
+    leaders: {
+      'Amy Carlon': '/img/photos/carlon-320.webp', 'Sujata Sharma': '/img/photos/sharma-320.webp',
+      'Donald J. Trump': '/img/photos/trump-320.webp', 'JD Vance': '/img/photos/vance-320.webp', 'Marco Rubio': '/img/photos/rubio-320.webp',
+    } as Record<string, string>,
   },
 };
 
@@ -234,11 +237,19 @@ export const home = {
       { title: 'A document notarized', text: 'Notarial services are available by appointment.', link: { label: 'Notarial services', href: '/citizen-services/#passports' } },
       { title: 'To study in the U.S.', text: 'EducationUSA advising and exchange programs.', link: { label: 'Education & exchanges', href: '/education/' } },
     ] as Card[],
-    leadersTitle: 'Mission leaders',
+    leadersTitle: 'Leadership',
+    missionLeadersTitle: 'U.S. mission leaders',
     leaders: [
-      { name: 'Amy Carlon', role: 'Chargé d\'affaires', bio: 'Amy Carlon assumed duties as Deputy Chief of Mission at the U.S. Embassy in Baku on June 23, 2025. She is a member of the Senior Foreign Service at the U.S. Department of State.' },
-      { name: 'Sujata Sharma', role: 'Deputy Chief of Mission', bio: 'Sujata Sharma is the Deputy Chief of Mission at the U.S. Embassy in Baku. Most recently she served as Deputy Director for Caucasus Affairs.' },
+      { name: 'Amy Carlon', role: 'Chargé d\'affaires', bio: 'Amy Carlon assumed duties as Deputy Chief of Mission at the U.S. Embassy in Baku on June 23, 2025. She is a member of the Senior Foreign Service at the U.S. Department of State.', href: 'https://az.usembassy.gov/our-relationship/our-ambassador/', external: true },
+      { name: 'Sujata Sharma', role: 'Deputy Chief of Mission', bio: 'Sujata Sharma is the Deputy Chief of Mission at the U.S. Embassy in Baku. Most recently she served as Deputy Director for Caucasus Affairs.', href: 'https://az.usembassy.gov/our-relationship/our-ambassador/', external: true },
     ],
+    governmentLeadersTitle: 'U.S. government leaders',
+    governmentLeaders: [
+      { name: 'Donald J. Trump', role: 'President of the United States', bio: 'Donald J. Trump serves as the 47th President of the United States. He also served as the 45th.', href: 'https://www.whitehouse.gov/administration/donald-j-trump/', external: true },
+      { name: 'JD Vance', role: 'Vice President of the United States', bio: 'JD Vance serves as the 50th Vice President of the United States.', href: 'https://www.whitehouse.gov/administration/jd-vance/', external: true },
+      { name: 'Marco Rubio', role: 'U.S. Secretary of State', bio: 'Marco Rubio serves as the 72nd United States Secretary of State.', href: 'https://www.state.gov/biographies/marco-rubio/', external: true },
+    ],
+    biographyLabel: 'Full biography',
     contactTitle: 'Location and contact information',
     addressLabel: 'Address',
     phoneLabel: 'Phone',
@@ -290,11 +301,19 @@ export const home = {
       { title: 'Sənədin notarial təsdiqi', text: 'Notariat xidmətləri əvvəlcədən qeydiyyatla göstərilir.', link: { label: 'Notariat xidmətləri', href: '/az/citizen-services/#passports' } },
       { title: 'ABŞ-da təhsil almaq', text: 'EducationUSA məsləhət xidməti və mübadilə proqramları.', link: { label: 'Təhsil və mübadilə', href: '/az/education/' } },
     ] as Card[],
-    leadersTitle: 'Missiya rəhbərləri',
+    leadersTitle: 'Rəhbərlik',
+    missionLeadersTitle: 'ABŞ missiyasının rəhbərləri',
     leaders: [
-      { name: 'Amy Carlon', role: 'Müvəqqəti işlər vəkili', bio: 'Amy Carlon 2025-ci il iyunun 23-də ABŞ-ın Bakıdakı Səfirliyində missiya rəhbərinin müavini vəzifəsinə başlayıb. O, ABŞ Dövlət Departamentinin Ali Xarici Xidmətinin üzvüdür.' },
-      { name: 'Sujata Sharma', role: 'Missiya rəhbərinin müavini', bio: 'Sujata Sharma ABŞ-ın Bakıdakı Səfirliyində missiya rəhbərinin müavinidir. Bundan əvvəl Qafqaz məsələləri üzrə direktor müavini vəzifəsində çalışıb.' },
+      { name: 'Amy Carlon', role: 'Müvəqqəti işlər vəkili', bio: 'Amy Carlon 2025-ci il iyunun 23-də ABŞ-ın Bakıdakı Səfirliyində missiya rəhbərinin müavini vəzifəsinə başlayıb. O, ABŞ Dövlət Departamentinin Ali Xarici Xidmətinin üzvüdür.', href: 'https://az.usembassy.gov/our-relationship/our-ambassador/', external: true },
+      { name: 'Sujata Sharma', role: 'Missiya rəhbərinin müavini', bio: 'Sujata Sharma ABŞ-ın Bakıdakı Səfirliyində missiya rəhbərinin müavinidir. Bundan əvvəl Qafqaz məsələləri üzrə direktor müavini vəzifəsində çalışıb.', href: 'https://az.usembassy.gov/our-relationship/our-ambassador/', external: true },
     ],
+    governmentLeadersTitle: 'ABŞ hökumətinin rəhbərləri',
+    governmentLeaders: [
+      { name: 'Donald J. Trump', role: 'Amerika Birləşmiş Ştatlarının Prezidenti', bio: 'Donald J. Trump Amerika Birləşmiş Ştatlarının 47-ci Prezidentidir. O, həmçinin 45-ci Prezident olub.', href: 'https://www.whitehouse.gov/administration/donald-j-trump/', external: true },
+      { name: 'JD Vance', role: 'Amerika Birləşmiş Ştatlarının Vitse-prezidenti', bio: 'JD Vance Amerika Birləşmiş Ştatlarının 50-ci Vitse-prezidentidir.', href: 'https://www.whitehouse.gov/administration/jd-vance/', external: true },
+      { name: 'Marco Rubio', role: 'ABŞ Dövlət Katibi', bio: 'Marco Rubio Amerika Birləşmiş Ştatlarının 72-ci Dövlət Katibidir.', href: 'https://www.state.gov/biographies/marco-rubio/', external: true },
+    ],
+    biographyLabel: 'Tam tərcümeyi-hal',
     contactTitle: 'Ünvan və əlaqə məlumatı',
     addressLabel: 'Ünvan',
     phoneLabel: 'Telefon',
@@ -341,6 +360,16 @@ export const visas = {
       { title: 'Attend your interview', text: 'Bring your passport, DS-160 confirmation, fee receipt, and supporting documents.' },
     ],
     stepsLink: { label: 'Schedule an interview (ustraveldocs.com)', href: 'https://www.ustraveldocs.com/az/en/nonimmigrant-visa', external: true },
+    tipsTitle: 'Visa tips',
+    tipsIntro: 'Six things that make a visa interview go smoothly.',
+    tips: [
+      { title: 'Schedule your appointment in advance', text: 'Be sure to get your visa in time for travel.', img: '/img/photos/tip-advance-480.webp' },
+      { title: 'Bring only the requested documents', text: 'You don\'t need to bring a stack of documents to your interview.', img: '/img/photos/tip-documents-480.webp' },
+      { title: 'Check your visa expiration date', text: 'Avoid an unpleasant surprise — renew early.', img: '/img/photos/tip-expiration-480.webp' },
+      { title: 'Don\'t be fooled by fraudsters', text: 'Anyone promising you a U.S. visa in return for money is lying.', img: '/img/photos/tip-fraud-480.webp' },
+      { title: 'Be yourself', text: 'Applying for a visa as another person won\'t work.', img: '/img/photos/tip-impersonation-480.webp' },
+      { title: 'No funny business with your photo', text: 'Make sure your visa photo complies with the rules.', img: '/img/photos/tip-photo-480.webp' },
+    ],
     wizardTitle: 'Not sure which visa you need?',
     wizardText: 'The Visa Wizard on travel.state.gov asks a few questions about your purpose of travel and points you to the right visa category.',
     wizardLink: { label: 'Use the Visa Wizard', href: 'https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/wizard.html', external: true },
@@ -401,6 +430,16 @@ export const visas = {
       { title: 'Müsahibədə iştirak edin', text: 'Pasportunuzu, DS-160 təsdiqini, ödəniş qəbzini və təsdiqedici sənədləri özünüzlə gətirin.' },
     ],
     stepsLink: { label: 'Müsahibə təyin edin (ustraveldocs.com)', href: 'https://www.ustraveldocs.com/az/az/nonimmigrant-visa', external: true },
+    tipsTitle: 'Viza məsləhətləri',
+    tipsIntro: 'Viza müsahibəsinin rahat keçməsi üçün altı məsləhət.',
+    tips: [
+      { title: 'Görüşünüzü əvvəlcədən təyin edin', text: 'Vizanızı səyahətə qədər vaxtında aldığınızdan əmin olun.', img: '/img/photos/tip-advance-480.webp' },
+      { title: 'Yalnız tələb olunan sənədləri gətirin', text: 'Müsahibəyə bir yığın sənəd gətirməyə ehtiyac yoxdur.', img: '/img/photos/tip-documents-480.webp' },
+      { title: 'Vizanızın bitmə tarixini yoxlayın', text: 'Xoşagəlməz sürprizdən qaçın — vaxtında yeniləyin.', img: '/img/photos/tip-expiration-480.webp' },
+      { title: 'Fırıldaqçılara aldanmayın', text: 'Pul müqabilində ABŞ vizası vəd edən hər kəs yalan danışır.', img: '/img/photos/tip-fraud-480.webp' },
+      { title: 'Özünüz olun', text: 'Başqa şəxs adından vizaya müraciət etmək nəticə verməyəcək.', img: '/img/photos/tip-impersonation-480.webp' },
+      { title: 'Foto ilə zarafat etməyin', text: 'Viza fotonuzun qaydalara uyğun olduğundan əmin olun.', img: '/img/photos/tip-photo-480.webp' },
+    ],
     wizardTitle: 'Hansı vizaya ehtiyacınız olduğunu bilmirsiniz?',
     wizardText: 'travel.state.gov saytındakı Viza Sehrbazı səyahət məqsədinizlə bağlı bir neçə sual verir və sizi düzgün viza kateqoriyasına yönləndirir.',
     wizardLink: { label: 'Viza Sehrbazından istifadə edin', href: 'https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/wizard.html', external: true },
@@ -600,6 +639,18 @@ export const education = {
         ],
       },
       {
+        id: 'programs', title: 'Exchange programs by audience',
+        intro: 'Programs the embassy recruits for in Azerbaijan. Details and application windows are on the embassy\'s education page.',
+        cards: [
+          { title: 'Professional degree programs', text: 'Fulbright Foreign Student Program · GIPA Master\'s Degree Program in Journalism', link: { label: 'Degree programs', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'Professional non-degree programs', text: 'Fulbright Faculty Development · Fulbright Visiting Researcher · Fulbright Visiting Scholar · Fulbright TEA', link: { label: 'Non-degree programs', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'Study of the U.S. Institutes (SUSI)', text: 'SUSI for Secondary Educators · SUSI for Scholars · SUSI for Student Leaders', link: { label: 'SUSI programs', href: 'https://exchanges.state.gov/non-us/program/study-us-institutes-scholars', external: true } },
+          { title: 'Student programs', text: 'Global Undergraduate Exchange Program (Global UGRAD) · Non-Degree Digital Media and Communications Program', link: { label: 'Student programs', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'High school students', text: 'Future Leaders Exchange Program (FLEX) · Benjamin Franklin Transatlantic Fellowship', link: { label: 'High school programs', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'Entrepreneurs', text: 'Young Transatlantic Innovation Leaders Initiative (YTILI) Fellowship', link: { label: 'YTILI Fellowship', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+        ],
+      },
+      {
         id: 'local', title: 'Local programs',
         cards: [
           { title: 'English Language Teaching Program', text: 'An open call for proposals for English language projects serving internally displaced communities and communities outside Baku.', link: { label: 'Program details', href: 'https://az.usembassy.gov/education-culture/', external: true } },
@@ -636,6 +687,18 @@ export const education = {
         intro: 'Akademik resurslar, əlaqələr, maliyyə imkanları və rüblük məzun bülleteni üçün Mübadilə Məzunları icma portalına qoşulun.',
         cards: [
           { title: 'Məzunların icma portalı', text: 'eLibraryUSA vasitəsilə akademik jurnallara çıxış əldə edin, digər məzunlarla əlaqə qurun və Məzunların Cəlb Edilməsi İnnovasiya Fondu (AEIF) kimi maliyyə imkanlarını tapın.', link: { label: 'Mübadilə Məzunları portalı', href: 'https://alumni.state.gov/', external: true } },
+        ],
+      },
+      {
+        id: 'programs', title: 'Auditoriyaya görə mübadilə proqramları',
+        intro: 'Səfirliyin Azərbaycanda iştirakçı seçdiyi proqramlar. Ətraflı məlumat və müraciət müddətləri səfirliyin təhsil səhifəsindədir.',
+        cards: [
+          { title: 'Peşəkar dərəcə proqramları', text: 'Fulbright Xarici Tələbə Proqramı · GIPA Jurnalistika üzrə magistr proqramı', link: { label: 'Dərəcə proqramları', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'Peşəkar dərəcəsiz proqramlar', text: 'Fulbright Müəllim Heyətinin İnkişafı · Fulbright Qonaq Tədqiqatçı · Fulbright Qonaq Alim · Fulbright TEA', link: { label: 'Dərəcəsiz proqramlar', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'ABŞ-ı Öyrənmə İnstitutları (SUSI)', text: 'Orta məktəb müəllimləri üçün SUSI · Alimlər üçün SUSI · Tələbə liderləri üçün SUSI', link: { label: 'SUSI proqramları', href: 'https://exchanges.state.gov/non-us/program/study-us-institutes-scholars', external: true } },
+          { title: 'Tələbə proqramları', text: 'Qlobal Bakalavr Mübadilə Proqramı (Global UGRAD) · Rəqəmsal Media və Kommunikasiya üzrə dərəcəsiz proqram', link: { label: 'Tələbə proqramları', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'Orta məktəb şagirdləri', text: 'Gələcək Liderlər Mübadilə Proqramı (FLEX) · Benjamin Franklin Transatlantik Təqaüdü', link: { label: 'Şagird proqramları', href: 'https://az.usembassy.gov/education-culture/', external: true } },
+          { title: 'Sahibkarlar', text: 'Gənc Transatlantik İnnovasiya Liderləri Təşəbbüsü (YTILI) Təqaüdü', link: { label: 'YTILI Təqaüdü', href: 'https://az.usembassy.gov/education-culture/', external: true } },
         ],
       },
       {

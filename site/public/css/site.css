@@ -197,6 +197,10 @@ body {
   align-items: flex-start;
   margin-bottom: 1.5rem;
 }
+.site-leader__name {
+  margin: 0;
+  font-size: 1.15rem;
+}
 .site-leader__photo {
   flex: none;
   width: 8rem;
