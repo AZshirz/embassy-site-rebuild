@@ -25,6 +25,12 @@ accessibility, and basic web security hygiene — with a measured before/after.
 Full numbers: [audit/lighthouse-summary.md](audit/lighthouse-summary.md) ·
 [audit/report.md](audit/report.md) (HTML-structure audit, all four pages).
 
+**Independent checks of the live site** (2026-09-21): [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fembassy-site-rebuild.sneakywun58.workers.dev%2F) grade **A+**;
+[PageSpeed Insights](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fembassy-site-rebuild.sneakywun58.workers.dev%2F) desktop
+**100 / 96 / 96 / 100** (Performance / Accessibility / Best Practices / SEO), LCP 0.6 s. The two 96s were real defects
+the public run caught — an "Open now" badge with 2.8:1 text contrast (my local runs only ever saw the "Closed" state) and two
+report covers with mismatched `width`/`height` attributes — fixed in the next commit; local desktop run after the fix: 100 / 100 / 100 / 100.
+
 ![Home page, desktop](docs/images/home-desktop.png)
 
 ## What was wrong with the original, and what the rebuild does about it

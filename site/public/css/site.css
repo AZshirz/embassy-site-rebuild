@@ -183,7 +183,7 @@ body {
 }
 .site-hours-status--open {
   background: #ecf3ec;
-  color: #00a91c;
+  color: #216e1f;   /* USWDS success-darker: 5.6:1 on this background (WCAG AA needs 4.5:1) */
 }
 .site-hours-status--closed {
   background: #f4e3db;

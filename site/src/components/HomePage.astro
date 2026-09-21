@@ -157,7 +157,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
         {t.reports.map((r) => (
           <li>
             <a class="site-report" href={r.href} rel="noopener">
-              <img src={r.img} alt="" width="120" height="155" loading="lazy" decoding="async" />
+              <img src={r.img} alt="" width={r.width} height={r.height} loading="lazy" decoding="async" />
               <span>{r.label}</span>
             </a>
           </li>
