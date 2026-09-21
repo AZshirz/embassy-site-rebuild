@@ -78,6 +78,9 @@ Cost of everything in this repo: **$0**.
 
 ## Run it
 
+Commands work the same in PowerShell and Git Bash; only the `cd` path style differs
+(`C:\Users\...\SiteImprover\site` in PowerShell, `/c/Users/.../SiteImprover/site` in Git Bash).
+
 ```powershell
 # one-time
 cd site
