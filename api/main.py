@@ -44,6 +44,8 @@ FEEDBACK_LIMIT_PER_HOUR = int(os.environ.get("FEEDBACK_LIMIT_PER_HOUR", "5"))
 MAX_BODY_BYTES = int(os.environ.get("MAX_BODY_BYTES", str(16 * 1024)))   # the largest legitimate request is ~1.5 KB
 # Fallback copy of the site's alerts.json (tools/fetch_alerts.py keeps both files in sync).
 BUNDLED_ALERTS = Path(__file__).resolve().parent / "data" / "alerts.json"
+# Optional copy of the site's search index, packaged alongside the code by the AWS build.
+BUNDLED_INDEX = Path(__file__).resolve().parent / os.environ.get("SEARCH_INDEX_FILE", "search-index.json")
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("api")
@@ -159,9 +161,19 @@ async def get_all_alerts(level: int | None = Query(None, ge=1, le=4, description
 # ---------- search ----------
 
 async def load_index() -> list[dict]:
-    """The static site publishes /search-index.json at build time; this fetches and caches it."""
+    """The site's search index, which it generates at build time.
+
+    Two ways to get it, in order:
+      1. A copy bundled next to this file (the AWS/Lambda deployment packages it into the zip).
+         No network call, so search works even if the site is unreachable, and there is no
+         cold-start penalty for the first search.
+      2. Fetched over HTTP from SITE_URL (the container deployment, where the site and the API
+         are separate services).
+    """
     if index_cache.fresh():
         return index_cache.value
+    if BUNDLED_INDEX.is_file():
+        return index_cache.set(json.loads(BUNDLED_INDEX.read_text(encoding="utf-8")))
     async with httpx.AsyncClient(timeout=20) as client:
         resp = await client.get(f"{SITE_URL}/search-index.json")
         resp.raise_for_status()

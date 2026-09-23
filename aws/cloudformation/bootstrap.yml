@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  One-time bootstrap for the AWS-only deployment: lets GitHub Actions deploy to this account
+  WITHOUT any long-lived AWS access keys, using OpenID Connect (OIDC) federation instead.
+  GitHub presents a short-lived signed token; AWS trusts it only for this repository and branch.
+
+  Deploy this once, by hand:
+    aws cloudformation deploy --template-file aws/cloudformation/bootstrap.yml \
+      --stack-name embassy-bootstrap --capabilities CAPABILITY_NAMED_IAM \
+      --parameter-overrides GitHubRepo=AZshirz/embassy-site-rebuild GitHubRef=refs/heads/aws
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Description: owner/repository allowed to assume the deploy role
+    Default: AZshirz/embassy-site-rebuild
+  GitHubRef:
+    Type: String
+    Description: The single git ref allowed to deploy. Restricting this means a push to any other
+      branch - including one from a fork - cannot touch AWS.
+    Default: refs/heads/aws
+
+Resources:
+  # Tells AWS to trust tokens issued by GitHub Actions.
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+
+  # Holds the Lambda deployment zips. Separate from the website bucket so the site bucket
+  # contains only public web content.
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "embassy-artifacts-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          # Cost control: old deployment zips are useless after a deploy; delete them so
+          # S3 storage cannot creep upward over months of pushes.
+          - Id: ExpireOldArtifacts
+            Status: Enabled
+            ExpirationInDays: 7
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  # The role GitHub Actions assumes. Trust is limited to one repo AND one branch.
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: embassy-github-deploy
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                # Exact match, not a wildcard: only this branch of this repo can deploy.
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubRepo}:ref:${GitHubRef}"
+      Policies:
+        - PolicyName: deploy-embassy-stack
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Manage only this project's CloudFormation stack.
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:GetTemplateSummary
+                Resource:
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/embassy-app/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/*"
+              - Effect: Allow
+                Action: cloudformation:ValidateTemplate
+                Resource: "*"
+              # Website bucket and artifacts bucket.
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:DeleteBucket
+                  - s3:PutBucketPolicy
+                  - s3:GetBucketPolicy
+                  - s3:DeleteBucketPolicy
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:GetBucketPublicAccessBlock
+                  - s3:PutEncryptionConfiguration
+                  - s3:GetEncryptionConfiguration
+                  - s3:PutLifecycleConfiguration
+                  - s3:GetLifecycleConfiguration
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:PutBucketTagging
+                  - s3:GetBucketTagging
+                Resource:
+                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}"
+                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}/*"
+                  - !Sub "arn:aws:s3:::embassy-artifacts-${AWS::AccountId}"
+                  - !Sub "arn:aws:s3:::embassy-artifacts-${AWS::AccountId}/*"
+              # Lambda function for the API.
+              - Effect: Allow
+                Action:
+                  - lambda:CreateFunction
+                  - lambda:UpdateFunctionCode
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:DeleteFunction
+                  - lambda:GetFunction
+                  - lambda:GetFunctionConfiguration
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                  - lambda:GetPolicy
+                  - lambda:CreateFunctionUrlConfig
+                  - lambda:UpdateFunctionUrlConfig
+                  - lambda:DeleteFunctionUrlConfig
+                  - lambda:GetFunctionUrlConfig
+                  - lambda:PutFunctionConcurrency
+                  - lambda:DeleteFunctionConcurrency
+                  - lambda:TagResource
+                  - lambda:ListTags
+                Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:embassy-api"
+              # CloudFront distribution, its security-headers policy and the URL-rewrite function.
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateDistribution
+                  - cloudfront:UpdateDistribution
+                  - cloudfront:DeleteDistribution
+                  - cloudfront:GetDistribution
+                  - cloudfront:GetDistributionConfig
+                  - cloudfront:TagResource
+                  - cloudfront:CreateOriginAccessControl
+                  - cloudfront:UpdateOriginAccessControl
+                  - cloudfront:DeleteOriginAccessControl
+                  - cloudfront:GetOriginAccessControl
+                  - cloudfront:CreateResponseHeadersPolicy
+                  - cloudfront:UpdateResponseHeadersPolicy
+                  - cloudfront:DeleteResponseHeadersPolicy
+                  - cloudfront:GetResponseHeadersPolicy
+                  - cloudfront:CreateFunction
+                  - cloudfront:UpdateFunction
+                  - cloudfront:DeleteFunction
+                  - cloudfront:DescribeFunction
+                  - cloudfront:GetFunction
+                  - cloudfront:PublishFunction
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:ListDistributions
+                Resource: "*"
+              # The Lambda execution role created by the app stack.
+              - Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:TagRole
+                  - iam:ListRoleTags
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/embassy-api-execution"
+              # Log group with a retention policy (so logs cannot grow without bound).
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:DescribeLogGroups
+                  - logs:PutRetentionPolicy
+                  - logs:DeleteRetentionPolicy
+                  - logs:TagResource
+                  - logs:ListTagsForResource
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/embassy-api*"
+
+Outputs:
+  DeployRoleArn:
+    Description: Put this in the GitHub repository variable AWS_DEPLOY_ROLE
+    Value: !GetAtt DeployRole.Arn
+  ArtifactsBucketName:
+    Description: Bucket the workflow uploads the Lambda zip to
+    Value: !Ref ArtifactsBucket

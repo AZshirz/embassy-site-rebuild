@@ -1,0 +1,281 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Embassy site rebuild, AWS-only deployment. One CloudFront distribution serves both the static
+  site (from a private S3 bucket) and the API (from a Lambda function URL) under a single domain,
+  so the browser never makes a cross-origin request: no CORS, and the Content-Security-Policy
+  stays at connect-src 'self'.
+
+  Cost design - every component is on an always-free AWS tier at this scale:
+    Lambda      1,000,000 requests + 400,000 GB-seconds per month, never expires
+    CloudFront  1 TB transfer + 10,000,000 requests per month, never expires
+    S3          ~20 MB of site files; fractions of a cent per month
+  Hard limits below (reserved concurrency, log retention, artifact expiry, PriceClass_100)
+  exist so that a traffic spike or a long-running loop cannot turn into a bill.
+
+Parameters:
+  ArtifactsBucket:
+    Type: String
+    Description: Bucket holding the Lambda deployment zip (created by bootstrap.yml)
+  LambdaZipKey:
+    Type: String
+    Description: Key of the Lambda zip inside that bucket, e.g. lambda/<git-sha>.zip
+  MaxConcurrency:
+    Type: Number
+    Default: 5
+    Description: Hard ceiling on simultaneous Lambda executions. Caps the worst-case compute
+      bill no matter how much traffic arrives.
+
+Resources:
+
+  # ---------- static site storage ----------
+
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "embassy-site-${AWS::AccountId}"
+      # The bucket is never public. CloudFront reads it through Origin Access Control;
+      # a direct request to the S3 URL is denied.
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+  SiteOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "embassy-site-oac-${AWS::AccountId}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ---------- the API ----------
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/embassy-api
+      # Declared explicitly so retention is set. Lambda would otherwise create this group
+      # with "never expire", and CloudWatch storage would grow forever.
+      RetentionInDays: 7
+
+  ApiExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: embassy-api-execution
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        # The function's entire privilege set: write its own logs. It reads no AWS data,
+        # writes to no bucket, and touches no other service.
+        - PolicyName: write-own-logs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "${ApiLogGroup.Arn}:*"
+
+  ApiFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: ApiLogGroup
+    Properties:
+      FunctionName: embassy-api
+      Runtime: python3.13
+      Architectures: [x86_64]
+      Handler: lambda_handler.handler
+      Role: !GetAtt ApiExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaZipKey
+      MemorySize: 512
+      Timeout: 30
+      # Cost ceiling: at most this many executions can run at once.
+      ReservedConcurrentExecutions: !Ref MaxConcurrency
+      Environment:
+        Variables:
+          # The search index is bundled into the zip at build time, so the function needs
+          # no network call to the site and no knowledge of the site's URL.
+          SEARCH_INDEX_FILE: search-index.json
+          PYTHONUNBUFFERED: "1"
+
+  ApiFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt ApiFunction.Arn
+      # CloudFront is the intended entry point. No CORS block is configured here because
+      # the browser only ever calls the API same-origin, through CloudFront.
+      AuthType: NONE
+
+  ApiUrlPublicPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ApiFunction.Arn
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  # ---------- edge behaviour ----------
+
+  # S3 serves objects by exact key, so "/visas/" has to become "/visas/index.html".
+  # The same function strips the "/api" prefix before requests reach Lambda, which is what
+  # lets one domain serve both the site and the API.
+  UrlRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "embassy-url-rewrite-${AWS::AccountId}"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Directory index resolution for S3, and /api prefix stripping for Lambda
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+
+          // API behaviour: '/api/search' -> '/search' so FastAPI sees its own routes.
+          if (uri === '/api' || uri === '/api/') {
+            request.uri = '/';
+            return request;
+          }
+          if (uri.startsWith('/api/')) {
+            request.uri = uri.substring(4);
+            return request;
+          }
+
+          // Static behaviour: resolve directory URLs to their index document.
+          if (uri.endsWith('/')) {
+            request.uri = uri + 'index.html';
+          } else if (uri.lastIndexOf('.') < uri.lastIndexOf('/')) {
+            request.uri = uri + '/index.html';
+          }
+          return request;
+        }
+
+  SecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "embassy-security-headers-${AWS::AccountId}"
+        Comment: Same header set the Cloudflare deployment sends via _headers
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            Override: true
+            # connect-src can stay 'self' because the API is served from this same domain.
+            ContentSecurityPolicy: >-
+              default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+              img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none';
+              base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            Override: true
+            FrameOption: DENY
+          ReferrerPolicy:
+            Override: true
+            ReferrerPolicy: strict-origin-when-cross-origin
+          StrictTransportSecurity:
+            Override: true
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+        CustomHeadersConfig:
+          Items:
+            - Header: Permissions-Policy
+              Value: camera=(), microphone=(), geolocation=(), payment=()
+              Override: true
+            - Header: Cross-Origin-Opener-Policy
+              Value: same-origin
+              Override: true
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Embassy site rebuild (AWS-only deployment)
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        # Cheapest edge footprint. CloudFront's free tier covers this regardless, but there is
+        # no reason to pay for edge locations a portfolio site will never need.
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site-s3
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt SiteOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: api-lambda
+            # Fn::Select strips "https://" and the trailing "/" from the function URL.
+            DomainName: !Select [2, !Split ["/", !GetAtt ApiFunctionUrl.FunctionUrl]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+              HTTPSPort: 443
+        DefaultCacheBehavior:
+          TargetOriginId: site-s3
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          # Managed policy: CachingOptimized
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt UrlRewriteFunction.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api-lambda
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            Compress: true
+            # Managed policy: CachingDisabled - API responses are per-request.
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            # Managed policy: AllViewerExceptHostHeader - required for Lambda function URL
+            # origins, which reject a forwarded Host header from the viewer.
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt UrlRewriteFunction.FunctionMetadata.FunctionARN
+
+Outputs:
+  SiteUrl:
+    Description: The public site (and API, under /api/)
+    Value: !Sub "https://${Distribution.DomainName}"
+  DistributionId:
+    Description: Used by the workflow to invalidate the cache after a deploy
+    Value: !Ref Distribution
+  SiteBucketName:
+    Value: !Ref SiteBucket
+  ApiFunctionUrl:
+    Description: Direct Lambda URL (CloudFront is the intended entry point)
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl

@@ -16,3 +16,4 @@ audit/screenshots/
 __pycache__/
 .pytest_cache/
 audit/lighthouse-ci/
+build/

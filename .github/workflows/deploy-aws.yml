@@ -1,0 +1,165 @@
+# Deploys the AWS-only version of the project: static site to S3 behind CloudFront, API to Lambda.
+#
+# Runs only on the `aws` branch, which is also the only ref the AWS deploy role trusts
+# (see aws/cloudformation/bootstrap.yml). No AWS access keys are stored anywhere: GitHub mints a
+# short-lived OIDC token for this workflow run and AWS exchanges it for temporary credentials.
+#
+# Prerequisites, done once by hand (see aws/README.md):
+#   1. deploy bootstrap.yml
+#   2. set the repository variables AWS_DEPLOY_ROLE, AWS_REGION, AWS_ARTIFACTS_BUCKET
+
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [aws]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write      # required for OIDC; without it no AWS credentials can be obtained
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      STACK_NAME: embassy-app
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # The API is served from /api on the same domain, so the site is built with a relative
+      # API path and its Content-Security-Policy needs nothing beyond 'self'.
+      - name: Build the site
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+        env:
+          PUBLIC_API_URL: /api
+
+      # Accessibility gate: the same check the Cloudflare pipeline runs. A regression here
+      # stops the deploy rather than shipping.
+      - name: Accessibility audit gate
+        run: |
+          pip install --quiet beautifulsoup4 lxml
+          python tools/audit.py --gate
+
+      - name: Package the Lambda
+        run: |
+          set -euo pipefail
+          rm -rf build/lambda && mkdir -p build/lambda
+          # Lambda runs Amazon Linux on x86_64; force matching wheels rather than whatever
+          # the runner would build for itself.
+          pip install -r api/requirements.txt \
+            --target build/lambda \
+            --platform manylinux2014_x86_64 \
+            --implementation cp \
+            --python-version 3.13 \
+            --only-binary=:all: \
+            --quiet
+          cp api/*.py build/lambda/
+          cp -r api/data build/lambda/data
+          # Bundle the search index so the function needs no network call to answer /search.
+          cp site/dist/search-index.json build/lambda/search-index.json
+          # uvicorn is only used for local/container runs; Lambda does not need it.
+          rm -rf build/lambda/uvicorn* build/lambda/uvloop* build/lambda/httptools* \
+                 build/lambda/watchfiles* build/lambda/websockets* build/lambda/*.dist-info
+          (cd build/lambda && zip -qr ../lambda.zip .)
+          echo "zip size: $(du -h build/lambda.zip | cut -f1)"
+
+      - name: Get AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload the Lambda package
+        id: upload
+        run: |
+          KEY="lambda/${GITHUB_SHA}.zip"
+          aws s3 cp build/lambda.zip "s3://${{ vars.AWS_ARTIFACTS_BUCKET }}/${KEY}"
+          echo "key=${KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file aws/cloudformation/stack.yml \
+            --stack-name "$STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              ArtifactsBucket=${{ vars.AWS_ARTIFACTS_BUCKET }} \
+              LambdaZipKey=${{ steps.upload.outputs.key }}
+
+      - name: Read the stack outputs
+        id: stack
+        run: |
+          get() { aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
+          echo "site_url=$(get SiteUrl)"          >> "$GITHUB_OUTPUT"
+          echo "bucket=$(get SiteBucketName)"     >> "$GITHUB_OUTPUT"
+          echo "distribution=$(get DistributionId)" >> "$GITHUB_OUTPUT"
+
+      # CloudFormation only points Lambda at the zip key on a change; force the code update so a
+      # commit that touches only Python still ships.
+      - name: Update the function code
+        run: |
+          aws lambda update-function-code \
+            --function-name embassy-api \
+            --s3-bucket ${{ vars.AWS_ARTIFACTS_BUCKET }} \
+            --s3-key ${{ steps.upload.outputs.key }} \
+            --publish >/dev/null
+          aws lambda wait function-updated --function-name embassy-api
+
+      - name: Publish the site to S3
+        run: |
+          # Fingerprinted assets can be cached forever; HTML and JSON must revalidate so a
+          # deploy is visible immediately.
+          aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
+            --delete --exclude "*.html" --exclude "*.json" \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
+            --delete --exclude "*" --include "*.html" --include "*.json" \
+            --cache-control "public,max-age=0,must-revalidate"
+
+      - name: Invalidate the CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.stack.outputs.distribution }} \
+            --paths "/*" >/dev/null
+
+      # Prove the deployment actually works rather than trusting that it did.
+      - name: Smoke test the live deployment
+        run: |
+          set -euo pipefail
+          URL="${{ steps.stack.outputs.site_url }}"
+          echo "Testing $URL"
+          for path in / /az/ /visas/ /search-index.json; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "$URL$path")
+            echo "  $path -> $code"; [ "$code" = "200" ]
+          done
+          echo "  /api/health -> $(curl -s --retry 5 --retry-delay 10 --retry-all-errors "$URL/api/health")"
+          curl -s "$URL/api/search?q=passport" | grep -q '"count"' && echo "  /api/search -> ok"
+          curl -sI "$URL/" | grep -i "content-security-policy" | head -1
+
+      - name: Summary
+        run: |
+          echo "### Deployed to AWS" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Site: ${{ steps.stack.outputs.site_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "API:  ${{ steps.stack.outputs.site_url }}/api/health" >> "$GITHUB_STEP_SUMMARY"
