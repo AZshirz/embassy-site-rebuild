@@ -37,7 +37,9 @@ Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "embassy-artifacts-${AWS::AccountId}"
+      # Deliberately unnamed. S3 bucket names are globally unique AND stay reserved for a while
+      # after deletion, so a fixed name makes the stack un-recreatable until that lease expires.
+      # CloudFormation generates a unique name instead; the workflow reads it from the stack output.
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -124,10 +126,12 @@ Resources:
                   - s3:PutBucketTagging
                   - s3:GetBucketTagging
                 Resource:
-                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}"
-                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}/*"
-                  - !Sub "arn:aws:s3:::embassy-artifacts-${AWS::AccountId}"
-                  - !Sub "arn:aws:s3:::embassy-artifacts-${AWS::AccountId}/*"
+                  # Trailing wildcard so the site bucket can take a suffix if its name is ever
+                  # held up by the same S3 reservation behaviour.
+                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}*"
+                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}*/*"
+                  - !GetAtt ArtifactsBucket.Arn
+                  - !Sub "${ArtifactsBucket.Arn}/*"
               # Lambda function for the API.
               - Effect: Allow
                 Action:
