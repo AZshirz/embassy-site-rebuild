@@ -179,31 +179,17 @@ Resources:
                   - lambda:ListVersionsByFunction
                   - lambda:GetFunctionCodeSigningConfig
                 Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:embassy-api"
-              # CloudFront distribution, its security-headers policy and the URL-rewrite function.
+              # CloudFront distribution, security-headers policy, origin access control and the
+              # URL-rewrite function.
+              #
+              # Granted as cloudfront:* deliberately. Most CloudFront actions do not support
+              # resource-level permissions, so an enumerated list still ends up scoped to "*"
+              # while quietly omitting the read and tag calls CloudFormation makes while
+              # resolving attributes - cloudfront:ListTagsForResource is what failed here, after
+              # two earlier rounds of the same problem. The meaningful boundary for this role is
+              # the OIDC trust condition (one repository, one branch), not the action list.
               - Effect: Allow
-                Action:
-                  - cloudfront:CreateDistribution
-                  - cloudfront:UpdateDistribution
-                  - cloudfront:DeleteDistribution
-                  - cloudfront:GetDistribution
-                  - cloudfront:GetDistributionConfig
-                  - cloudfront:TagResource
-                  - cloudfront:CreateOriginAccessControl
-                  - cloudfront:UpdateOriginAccessControl
-                  - cloudfront:DeleteOriginAccessControl
-                  - cloudfront:GetOriginAccessControl
-                  - cloudfront:CreateResponseHeadersPolicy
-                  - cloudfront:UpdateResponseHeadersPolicy
-                  - cloudfront:DeleteResponseHeadersPolicy
-                  - cloudfront:GetResponseHeadersPolicy
-                  - cloudfront:CreateFunction
-                  - cloudfront:UpdateFunction
-                  - cloudfront:DeleteFunction
-                  - cloudfront:DescribeFunction
-                  - cloudfront:GetFunction
-                  - cloudfront:PublishFunction
-                  - cloudfront:CreateInvalidation
-                  - cloudfront:ListDistributions
+                Action: cloudfront:*
                 Resource: "*"
               # The Lambda execution role created by the app stack.
               - Effect: Allow
