@@ -1,5 +1,7 @@
 # AWS-only deployment
 
+**Live:** https://d19v507gh8thmt.cloudfront.net · API at https://d19v507gh8thmt.cloudfront.net/api/health
+
 This branch (`aws`) deploys the same application entirely on AWS. The `main` branch is unchanged
 and still deploys to Cloudflare + Google Cloud Run, so the two can be compared side by side.
 
