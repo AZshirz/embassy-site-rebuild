@@ -148,10 +148,11 @@ Resources:
                   - s3:PutBucketTagging
                   - s3:GetBucketTagging
                 Resource:
-                  # Trailing wildcard so the site bucket can take a suffix if its name is ever
-                  # held up by the same S3 reservation behaviour.
-                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}*"
-                  - !Sub "arn:aws:s3:::embassy-site-${AWS::AccountId}*/*"
+                  # The app stack's site bucket is named by CloudFormation (embassy-app-sitebucket-*)
+                  # for the same reason the artifacts bucket is: a fixed name stays reserved in S3's
+                  # global namespace after deletion and blocks the stack from being recreated.
+                  - "arn:aws:s3:::embassy-app-*"
+                  - "arn:aws:s3:::embassy-app-*/*"
                   - !GetAtt ArtifactsBucket.Arn
                   - !Sub "${ArtifactsBucket.Arn}/*"
               # Lambda function for the API.
@@ -174,6 +175,9 @@ Resources:
                   - lambda:DeleteFunctionConcurrency
                   - lambda:TagResource
                   - lambda:ListTags
+                  - lambda:PublishVersion
+                  - lambda:ListVersionsByFunction
+                  - lambda:GetFunctionCodeSigningConfig
                 Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:embassy-api"
               # CloudFront distribution, its security-headers policy and the URL-rewrite function.
               - Effect: Allow
@@ -215,18 +219,26 @@ Resources:
                   - iam:GetRolePolicy
                   - iam:TagRole
                   - iam:ListRoleTags
+                  - iam:ListRolePolicies
+                  - iam:ListAttachedRolePolicies
                 Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/embassy-api-execution"
               # Log group with a retention policy (so logs cannot grow without bound).
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:DeleteLogGroup
-                  - logs:DescribeLogGroups
                   - logs:PutRetentionPolicy
                   - logs:DeleteRetentionPolicy
                   - logs:TagResource
                   - logs:ListTagsForResource
                 Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/embassy-api*"
+              # DescribeLogGroups enumerates log groups rather than acting on one, so IAM only
+              # accepts it with Resource "*". Scoping it to the project's log group ARN is what
+              # failed the first app-stack deploy: CloudFormation could not read the log group's
+              # Arn to build the Lambda execution role.
+              - Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: "*"
 
 Outputs:
   DeployRoleArn:

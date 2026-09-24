@@ -22,8 +22,15 @@ Parameters:
   MaxConcurrency:
     Type: Number
     Default: 5
-    Description: Hard ceiling on simultaneous Lambda executions. Caps the worst-case compute
-      bill no matter how much traffic arrives.
+    Description: >
+      Hard ceiling on simultaneous Lambda executions, capping the worst-case compute bill no
+      matter how much traffic arrives. Set to 0 to leave it unset: AWS requires at least 100
+      UNreserved concurrent executions to remain in the account, so an account whose total
+      concurrency quota is below that cannot reserve any at all. New accounts sometimes ship
+      with such a quota.
+
+Conditions:
+  LimitConcurrency: !Not [!Equals [!Ref MaxConcurrency, 0]]
 
 Resources:
 
@@ -32,7 +39,10 @@ Resources:
   SiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "embassy-site-${AWS::AccountId}"
+      # Deliberately unnamed, like the artifacts bucket: a fixed S3 name stays reserved globally
+      # after deletion, which would block this stack from being recreated after a failed deploy.
+      # The workflow reads the generated name from the SiteBucketName output.
+      #
       # The bucket is never public. CloudFront reads it through Origin Access Control;
       # a direct request to the S3 URL is denied.
       PublicAccessBlockConfiguration:
@@ -118,8 +128,9 @@ Resources:
         S3Key: !Ref LambdaZipKey
       MemorySize: 512
       Timeout: 30
-      # Cost ceiling: at most this many executions can run at once.
-      ReservedConcurrentExecutions: !Ref MaxConcurrency
+      # Cost ceiling: at most this many executions can run at once. Omitted entirely when
+      # MaxConcurrency is 0, for accounts that cannot reserve concurrency (see the parameter).
+      ReservedConcurrentExecutions: !If [LimitConcurrency, !Ref MaxConcurrency, !Ref "AWS::NoValue"]
       Environment:
         Variables:
           # The search index is bundled into the zip at build time, so the function needs
