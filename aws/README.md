@@ -114,6 +114,36 @@ invalidates CloudFront, and smoke-tests the live URL. The site URL appears in th
 The first deploy takes ~15 minutes because CloudFront distributions are slow to create; later
 deploys take 2–3 minutes.
 
+## Troubleshooting
+
+### `Not authorized to perform sts:AssumeRoleWithWebIdentity`
+
+The role exists and was found, but its trust policy rejected the token. Almost always the subject
+claim does not match what the policy expects.
+
+GitHub issues one of two subject formats, and **which one it sends is not obvious from the
+documentation**:
+
+```
+repo:OWNER/REPO:ref:refs/heads/aws                       plain
+repo:OWNER@330568160/REPO@1379002690:ref:refs/heads/aws   with immutable numeric IDs
+```
+
+The second form exists so that renaming an account or repository cannot be used to inherit
+another project's trust relationship. This project hit exactly that: the trust policy was written
+for the plain form, GitHub sent the ID form, and the two never matched even though every visible
+string looked correct. The template now accepts both.
+
+To see what your repository actually sends, the deploy workflow has a
+**"Show the OIDC claims this run presents"** step that decodes the token's claims (never the token
+itself). Compare its `sub` line against the role's **Trust relationships** tab in IAM.
+
+Your numeric IDs come from the GitHub API:
+
+```bash
+curl -s https://api.github.com/repos/OWNER/REPO | grep -E '"id"'
+```
+
 ## Tearing it down
 
 ```bash
