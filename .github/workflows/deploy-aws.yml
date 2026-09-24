@@ -180,13 +180,39 @@ jobs:
           set -euo pipefail
           URL="${{ steps.stack.outputs.site_url }}"
           echo "Testing $URL"
-          for path in / /az/ /visas/ /search-index.json; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "$URL$path")
-            echo "  $path -> $code"; [ "$code" = "200" ]
+          fail=0
+          # Status check. Writing the body out means a failure shows WHY, not just the code.
+          check() {
+            code=$(curl -s -o /tmp/body -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "$URL$1")
+            if [ "$code" = "200" ]; then
+              echo "  ok    $1"
+            else
+              echo "  FAIL  $1 -> HTTP $code"; head -c 300 /tmp/body; echo; fail=1
+            fi
+          }
+          for path in / /az/ /visas/ /az/visas/ /citizen-services/ /education/ /search-index.json; do
+            check "$path"
           done
-          echo "  /api/health -> $(curl -s --retry 5 --retry-delay 10 --retry-all-errors "$URL/api/health")"
-          curl -s "$URL/api/search?q=passport" | grep -q '"count"' && echo "  /api/search -> ok"
-          curl -sI "$URL/" | grep -i "content-security-policy" | head -1
+          check /api/health
+          check /api/alerts
+          check "/api/search?q=passport"
+
+          # Content assertions. A 200 alone does not prove the API answered correctly.
+          # NOTE: these are deliberately NOT written as `curl ... | grep -q x && echo ok`.
+          # Under `set -e`, a failure on the left of && is ignored, so that form reports
+          # success for a broken API - which is exactly how a 403 shipped undetected once.
+          if ! curl -s "$URL/api/health" | grep -q '"status":"ok"'; then
+            echo "  FAIL  /api/health did not report status ok"; fail=1
+          fi
+          if ! curl -s "$URL/api/search?q=passport" | grep -q '"count"'; then
+            echo "  FAIL  /api/search returned no result count"; fail=1
+          fi
+          if ! curl -sI "$URL/" | grep -qi "content-security-policy"; then
+            echo "  FAIL  no Content-Security-Policy header"; fail=1
+          fi
+
+          [ "$fail" = "0" ] || { echo "smoke test failed"; exit 1; }
+          echo "all smoke tests passed"
 
       - name: Summary
         run: |
