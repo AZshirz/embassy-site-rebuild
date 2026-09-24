@@ -7,6 +7,11 @@
 # Prerequisites, done once by hand (see aws/README.md):
 #   1. deploy bootstrap.yml
 #   2. set the repository variables AWS_DEPLOY_ROLE, AWS_REGION, AWS_ARTIFACTS_BUCKET
+#
+# Optional: AWS_MAX_CONCURRENCY caps simultaneous Lambda executions. It defaults to 0, meaning
+# "do not reserve", because AWS requires a minimum amount of UNreserved concurrency to remain in
+# the account and a new account's total quota is often too small to reserve from at all. On an
+# account with the standard 1000 quota, setting it to 5 restores that ceiling.
 
 name: Deploy to AWS
 
@@ -129,7 +134,8 @@ jobs:
             --no-fail-on-empty-changeset \
             --parameter-overrides \
               ArtifactsBucket=${{ vars.AWS_ARTIFACTS_BUCKET }} \
-              LambdaZipKey=${{ steps.upload.outputs.key }}
+              LambdaZipKey=${{ steps.upload.outputs.key }} \
+              MaxConcurrency=${{ vars.AWS_MAX_CONCURRENCY || '0' }}
 
       - name: Read the stack outputs
         id: stack
