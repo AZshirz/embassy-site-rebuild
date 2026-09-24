@@ -146,6 +146,10 @@ Resources:
       # the browser only ever calls the API same-origin, through CloudFront.
       AuthType: NONE
 
+  # A public function URL needs TWO resource-based policy statements. Since October 2025 AWS
+  # requires lambda:InvokeFunction alongside lambda:InvokeFunctionUrl; granting only the latter -
+  # the pattern in every pre-2025 example - returns 403 even when AuthType is NONE. The console
+  # and SAM add both for you; CloudFormation does not.
   ApiUrlPublicPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -153,6 +157,16 @@ Resources:
       Action: lambda:InvokeFunctionUrl
       Principal: "*"
       FunctionUrlAuthType: NONE
+
+  ApiUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ApiFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      # Limits this grant to calls arriving through the function URL, so making the URL public
+      # does not also make the function invokable by any other route.
+      InvokedViaFunctionUrl: true
 
   # ---------- edge behaviour ----------
 

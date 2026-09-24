@@ -144,6 +144,23 @@ Your numeric IDs come from the GitHub API:
 curl -s https://api.github.com/repos/OWNER/REPO | grep -E '"id"'
 ```
 
+### `403 Forbidden` from the API while the pages work
+
+The Lambda function URL is rejecting the invocation. Confirm by calling the function URL directly
+(the `ApiFunctionUrl` stack output) - if that also returns 403, CloudFront is not involved.
+
+A public function URL needs **two** resource-based policy statements, not one:
+
+| Action | Condition |
+|---|---|
+| `lambda:InvokeFunctionUrl` | `lambda:FunctionUrlAuthType` = `NONE` |
+| `lambda:InvokeFunction` | `lambda:InvokedViaFunctionUrl` = `true` |
+
+AWS began requiring the second one in **October 2025**. The console and AWS SAM add both
+automatically; **CloudFormation does not**, and essentially every example written before that date
+shows only the first. The symptom is a 403 while the auth type reads `NONE` and the policy looks
+correct - which is exactly what happened here.
+
 ## Tearing it down
 
 ```bash
