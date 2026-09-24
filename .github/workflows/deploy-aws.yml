@@ -81,11 +81,26 @@ jobs:
           cp -r api/data build/lambda/data
           # Bundle the search index so the function needs no network call to answer /search.
           cp site/dist/search-index.json build/lambda/search-index.json
-          # uvicorn is only used for local/container runs; Lambda does not need it.
-          rm -rf build/lambda/uvicorn* build/lambda/uvloop* build/lambda/httptools* \
-                 build/lambda/watchfiles* build/lambda/websockets* build/lambda/*.dist-info
+          # Nothing is pruned from the package. An earlier version deleted uvicorn and the
+          # *.dist-info directories to save ~5 MB on a 24 MB package (the limit is 250 MB
+          # unzipped), and the missing metadata broke the function at import: pydantic[email]
+          # reads importlib.metadata.version("email-validator") and raised PackageNotFoundError.
+          # Not worth trading a working deployment for a few megabytes.
           (cd build/lambda && zip -qr ../lambda.zip .)
-          echo "zip size: $(du -h build/lambda.zip | cut -f1)"
+          echo "unzipped: $(du -sh build/lambda | cut -f1), zipped: $(du -h build/lambda.zip | cut -f1)"
+
+      # Import the package inside the real Lambda runtime image before shipping it. A unit test
+      # run against the source tree cannot catch a PACKAGING fault - wrong platform wheels, a
+      # missing file, deleted metadata - because the source tree has none of those problems.
+      # This is the same idea as the container-boot job in ci.yml, which caught a Dockerfile that
+      # omitted a module.
+      - name: Verify the package imports in Lambda's runtime
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint python \
+            -v "$PWD/build/lambda:/var/task:ro" \
+            public.ecr.aws/lambda/python:3.13 \
+            -c "import lambda_handler; print('handler imported:', lambda_handler.handler)"
 
       # Diagnostic: prints the identity GitHub is actually asserting, so a trust-policy
       # mismatch can be read off directly instead of guessed at. Prints claims only,
