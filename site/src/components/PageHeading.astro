@@ -3,6 +3,8 @@
 const { title, lead } = Astro.props as { title: string; lead?: string };
 ---
 <div class="site-page-heading">
-  <h1 class="font-heading-2xl margin-top-0 margin-bottom-2">{title}</h1>
-  {lead && <p class="usa-intro margin-top-0">{lead}</p>}
+  <div class="grid-container">
+    <h1 class="font-heading-2xl margin-top-0 margin-bottom-2">{title}</h1>
+    {lead && <p class="usa-intro margin-top-0">{lead}</p>}
+  </div>
 </div>

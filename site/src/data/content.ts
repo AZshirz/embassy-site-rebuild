@@ -9,7 +9,7 @@ export type Lang = 'en' | 'az';
 export const LANGS: Lang[] = ['en', 'az'];
 
 export interface Link { label: string; href: string; external?: boolean }
-export interface Card { title: string; text: string; link: Link }
+export interface Card { title: string; text: string; link: Link; detail?: string }
 export interface Section { id: string; title: string; intro?: string; cards: Card[] }
 
 // ---------- Shared chrome (banner, header, footer, emergency box) ----------
@@ -57,6 +57,7 @@ export const ui = {
     lastReviewed: 'Content last reviewed',
     translationNote: 'This page is a translation. Where a translation is not yet available, the English text is shown.',
     onThisPage: 'On this page',
+    moreDetails: 'More details',
     search: {
       label: 'Search this site',
       placeholder: 'Search visas, passports, services…',
@@ -67,6 +68,8 @@ export const ui = {
       noResults: 'No results. Try a different word, or browse the pages in the menu.',
       needsJs: 'Search needs JavaScript. You can also browse the pages from the menu above.',
       error: 'Search is temporarily unavailable. Please try again in a moment.',
+      examplesTitle: 'Common searches',
+      examples: ['passport', 'visa interview', 'emergency assistance', 'notarial services', 'studying in the United States', 'voting from abroad'],
       href: '/search/',
     },
     ask: {
@@ -84,6 +87,13 @@ export const ui = {
       needsJs: 'The assistant needs JavaScript. You can also use the search box above.',
       disclaimer: 'This is an experimental assistant. For anything official, use the linked pages or contact the embassy.',
       searchLink: 'Or search the site instead',
+      examplesTitle: 'Questions this assistant can answer',
+      examples: [
+        'How do I renew my passport while living in Azerbaijan?',
+        'When is the embassy open?',
+        'Where is the embassy located?',
+        'What is the phone number for visa questions?',
+      ],
       href: '/ask/',
     },
     feedback: {
@@ -164,6 +174,7 @@ export const ui = {
     lastReviewed: 'Məzmun son dəfə yoxlanılıb',
     translationNote: 'Bu səhifə tərcümədir. Tərcümə hələ mövcud olmayan yerlərdə ingilis dilindəki mətn göstərilir.',
     onThisPage: 'Bu səhifədə',
+    moreDetails: 'Ətraflı məlumat',
     search: {
       label: 'Saytda axtarış',
       placeholder: 'Viza, pasport, xidmətlər…',
@@ -174,6 +185,8 @@ export const ui = {
       noResults: 'Nəticə tapılmadı. Başqa söz sınayın və ya menyudan səhifələrə baxın.',
       needsJs: 'Axtarış üçün JavaScript lazımdır. Səhifələrə yuxarıdakı menyudan da baxa bilərsiniz.',
       error: 'Axtarış müvəqqəti əlçatan deyil. Bir azdan yenidən cəhd edin.',
+      examplesTitle: 'Tez-tez axtarılanlar',
+      examples: ['pasport', 'viza müsahibəsi', 'təcili yardım', 'notariat xidmətləri', 'ABŞ-da təhsil', 'xaricdən səsvermə'],
       href: '/az/search/',
     },
     ask: {
@@ -191,6 +204,13 @@ export const ui = {
       needsJs: 'Köməkçi üçün JavaScript lazımdır. Yuxarıdakı axtarış qutusundan da istifadə edə bilərsiniz.',
       disclaimer: 'Bu eksperimental köməkçidir. Rəsmi məlumat üçün keçid verilən səhifələrdən istifadə edin və ya səfirliklə əlaqə saxlayın.',
       searchLink: 'Və ya saytda axtarış edin',
+      examplesTitle: 'Bu köməkçinin cavab verə biləcəyi suallar',
+      examples: [
+        'Azərbaycanda yaşayarkən pasportumu necə yeniləyə bilərəm?',
+        'Səfirlik nə vaxt açıqdır?',
+        'Səfirlik harada yerləşir?',
+        'Viza sualları üçün telefon nömrəsi nədir?',
+      ],
       href: '/az/ask/',
     },
     feedback: {
@@ -333,12 +353,12 @@ export const home = {
       { title: 'When baseball fields became the home of the brave', date: '2026-09-09', href: 'https://share.america.gov/', external: true },
     ],
     needs: [
-      { title: 'A U.S. visa', text: 'Visit, study, work in, or immigrate to the United States.', link: { label: 'Visa information', href: '/visas/' } },
-      { title: 'A U.S. passport', text: 'Renew, replace, or apply for a passport while abroad.', link: { label: 'Passport services', href: 'https://travel.state.gov/content/travel/en/passports.html', external: true } },
-      { title: 'Emergency assistance', text: 'Help for U.S. citizens facing an emergency in Azerbaijan.', link: { label: 'Emergency contacts', href: '/citizen-services/#emergency' } },
-      { title: 'Alerts for U.S. citizens', text: 'Enroll in STEP to receive safety and security updates.', link: { label: 'Sign up for alerts', href: 'https://step.state.gov/', external: true } },
-      { title: 'A document notarized', text: 'Notarial services are available by appointment.', link: { label: 'Notarial services', href: '/citizen-services/#passports' } },
-      { title: 'To study in the U.S.', text: 'EducationUSA advising and exchange programs.', link: { label: 'Education & exchanges', href: '/education/' } },
+      { title: 'A U.S. visa', text: 'Visit, study, work in, or immigrate to the United States.', detail: 'Nonimmigrant visas cover tourism, study, business and temporary work; immigrant visas cover moving to the United States permanently. Apply with the DS-160 form, pay the fee, then schedule an interview at the embassy. Application fees are non-refundable and non-transferable.', link: { label: 'Visa information', href: '/visas/' } },
+      { title: 'A U.S. passport', text: 'Renew, replace, or apply for a passport while abroad.', detail: 'U.S. citizens overseas can renew a passport, replace one, or apply for a new one. The consular section also handles notarial services and Consular Reports of Birth Abroad, which serve as proof of U.S. citizenship for a child born in Azerbaijan.', link: { label: 'Passport services', href: 'https://travel.state.gov/content/travel/en/passports.html', external: true } },
+      { title: 'Emergency assistance', text: 'Help for U.S. citizens facing an emergency in Azerbaijan.', detail: 'The embassy assists U.S. citizens who are arrested, become victims of crime, or face a death in the family abroad, and works on international parental child abduction cases. Emergency telephone numbers appear in the header and footer of every page on this site.', link: { label: 'Emergency contacts', href: '/citizen-services/#emergency' } },
+      { title: 'Alerts for U.S. citizens', text: 'Enroll in STEP to receive safety and security updates.', detail: 'The Smart Traveler Enrollment Program sends safety and security alerts and local updates while you are abroad. The current travel advisory level for Azerbaijan is shown at the top of every page on this site.', link: { label: 'Sign up for alerts', href: 'https://step.state.gov/', external: true } },
+      { title: 'A document notarized', text: 'Notarial services are available by appointment.', detail: 'Notarial and authentication services are provided by appointment at the consular section, alongside passport services and Consular Reports of Birth Abroad.', link: { label: 'Notarial services', href: '/citizen-services/#passports' } },
+      { title: 'To study in the U.S.', text: 'EducationUSA advising and exchange programs.', detail: 'EducationUSA advising centers guide you through the Five Steps to U.S. Study. The embassy recruits in Azerbaijan for exchange programs including Fulbright, Global UGRAD, FLEX and the Study of the U.S. Institutes. Students and exchange visitors must be accepted by their school or program sponsor before applying for a visa.', link: { label: 'Education & exchanges', href: '/education/' } },
     ] as Card[],
     leadersTitle: 'Leadership',
     missionLeadersTitle: 'U.S. mission leaders',
@@ -359,6 +379,8 @@ export const home = {
     faxLabel: 'Fax',
     followLabel: 'Follow the embassy',
     mapLink: 'Open in OpenStreetMap',
+    mapAlt: 'Street map of central Baku with the U.S. Embassy marked. Opens OpenStreetMap.',
+    mapCredit: 'Map data © OpenStreetMap contributors',
     reportsTitle: 'U.S. Department of State reports',
     reports: [
       { label: '2025 Trafficking in Persons Report', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true, img: '/img/photos/report-tip-240.webp', width: 120, height: 156 },
@@ -397,12 +419,12 @@ export const home = {
       { title: 'When baseball fields became the home of the brave', date: '2026-09-09', href: 'https://share.america.gov/', external: true },
     ],
     needs: [
-      { title: 'ABŞ vizası', text: 'Amerika Birləşmiş Ştatlarına səfər, təhsil, iş və ya immiqrasiya.', link: { label: 'Viza məlumatı', href: '/az/visas/' } },
-      { title: 'ABŞ pasportu', text: 'Xaricdə pasportu yeniləyin, dəyişdirin və ya yeni pasport üçün müraciət edin.', link: { label: 'Pasport xidmətləri', href: 'https://travel.state.gov/content/travel/en/passports.html', external: true } },
-      { title: 'Təcili yardım', text: 'Azərbaycanda təcili vəziyyətlə üzləşən ABŞ vətəndaşlarına kömək.', link: { label: 'Təcili əlaqə nömrələri', href: '/az/citizen-services/#emergency' } },
-      { title: 'ABŞ vətəndaşları üçün xəbərdarlıqlar', text: 'Təhlükəsizlik xəbərdarlıqları almaq üçün STEP proqramına qeydiyyatdan keçin.', link: { label: 'Xəbərdarlıqlara abunə olun', href: 'https://step.state.gov/', external: true } },
-      { title: 'Sənədin notarial təsdiqi', text: 'Notariat xidmətləri əvvəlcədən qeydiyyatla göstərilir.', link: { label: 'Notariat xidmətləri', href: '/az/citizen-services/#passports' } },
-      { title: 'ABŞ-da təhsil almaq', text: 'EducationUSA məsləhət xidməti və mübadilə proqramları.', link: { label: 'Təhsil və mübadilə', href: '/az/education/' } },
+      { title: 'ABŞ vizası', text: 'Amerika Birləşmiş Ştatlarına səfər, təhsil, iş və ya immiqrasiya.', detail: 'Qeyri-immiqrant vizalar səfər, təhsil, biznes və müvəqqəti iş üçün, immiqrant vizalar isə ABŞ-a daimi köçmək üçündür. DS-160 formasını doldurun, rüsumu ödəyin və səfirlikdə müsahibə üçün vaxt təyin edin. Müraciət rüsumları geri qaytarılmır və başqasına verilmir.', link: { label: 'Viza məlumatı', href: '/az/visas/' } },
+      { title: 'ABŞ pasportu', text: 'Xaricdə pasportu yeniləyin, dəyişdirin və ya yeni pasport üçün müraciət edin.', detail: 'Xaricdəki ABŞ vətəndaşları pasportu yeniləyə, dəyişdirə və ya yeni pasport üçün müraciət edə bilər. Konsulluq şöbəsi həmçinin notariat xidmətləri və Azərbaycanda doğulan uşaq üçün ABŞ vətəndaşlığını təsdiq edən Konsulluq Doğum Hesabatını rəsmiləşdirir.', link: { label: 'Pasport xidmətləri', href: 'https://travel.state.gov/content/travel/en/passports.html', external: true } },
+      { title: 'Təcili yardım', text: 'Azərbaycanda təcili vəziyyətlə üzləşən ABŞ vətəndaşlarına kömək.', detail: 'Səfirlik həbs olunan, cinayət qurbanı olan və ya xaricdə ailə itkisi ilə üzləşən ABŞ vətəndaşlarına kömək edir, həmçinin beynəlxalq valideyn uşaq qaçırma işləri ilə məşğul olur. Təcili telefon nömrələri bu saytın hər səhifəsinin yuxarı və aşağı hissəsində göstərilir.', link: { label: 'Təcili əlaqə nömrələri', href: '/az/citizen-services/#emergency' } },
+      { title: 'ABŞ vətəndaşları üçün xəbərdarlıqlar', text: 'Təhlükəsizlik xəbərdarlıqları almaq üçün STEP proqramına qeydiyyatdan keçin.', detail: 'Smart Traveler Enrollment Program (STEP) xaricdə olduğunuz müddətdə təhlükəsizlik xəbərdarlıqları və yerli yeniliklər göndərir. Azərbaycan üçün cari səyahət xəbərdarlığının səviyyəsi bu saytın hər səhifəsinin yuxarısında göstərilir.', link: { label: 'Xəbərdarlıqlara abunə olun', href: 'https://step.state.gov/', external: true } },
+      { title: 'Sənədin notarial təsdiqi', text: 'Notariat xidmətləri əvvəlcədən qeydiyyatla göstərilir.', detail: 'Notariat və təsdiq xidmətləri konsulluq şöbəsində əvvəlcədən qeydiyyatla, pasport xidmətləri və Konsulluq Doğum Hesabatı ilə birlikdə göstərilir.', link: { label: 'Notariat xidmətləri', href: '/az/citizen-services/#passports' } },
+      { title: 'ABŞ-da təhsil almaq', text: 'EducationUSA məsləhət xidməti və mübadilə proqramları.', detail: 'EducationUSA məsləhət mərkəzləri sizi ABŞ-da təhsilin Beş Addımı üzrə istiqamətləndirir. Səfirlik Azərbaycanda Fulbright, Global UGRAD, FLEX və Study of the U.S. Institutes kimi mübadilə proqramları üzrə namizəd seçir. Tələbələr və mübadilə iştirakçıları viza üçün müraciət etməzdən əvvəl təhsil müəssisəsi və ya proqram sponsoru tərəfindən qəbul edilməlidir.', link: { label: 'Təhsil və mübadilə', href: '/az/education/' } },
     ] as Card[],
     leadersTitle: 'Rəhbərlik',
     missionLeadersTitle: 'ABŞ missiyasının rəhbərləri',
@@ -423,6 +445,8 @@ export const home = {
     faxLabel: 'Faks',
     followLabel: 'Səfirliyi izləyin',
     mapLink: 'OpenStreetMap-də açın',
+    mapAlt: 'Bakının mərkəzinin xəritəsi, ABŞ Səfirliyi işarələnib. OpenStreetMap-i açır.',
+    mapCredit: 'Xəritə məlumatları © OpenStreetMap iştirakçıları',
     reportsTitle: 'ABŞ Dövlət Departamentinin hesabatları',
     reports: [
       { label: 'İnsan alveri üzrə 2025-ci il hesabatı', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true, img: '/img/photos/report-tip-240.webp', width: 120, height: 156 },
@@ -603,9 +627,9 @@ export const citizens = {
         id: 'financial', title: 'Emergency financial assistance',
         intro: 'U.S. citizens who need emergency funds abroad should first contact family, friends, a bank, or an employer. When that is not possible, the Department of State can help.',
         cards: [
-          { title: 'Wiring money directly', text: 'Use a commercial money transfer service such as Western Union or MoneyGram. The recipient will need proof of identity such as a passport. Be wary of international financial scams.', link: { label: 'Sending money to a citizen abroad', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
-          { title: 'Sending money through the Department of State', text: 'Family or friends may send funds through the Department of State for delivery to a destitute U.S. citizen at the nearest embassy. A $30 fee applies.', link: { label: 'How the Department of State can help', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
-          { title: 'Repatriation loans', text: 'Destitute U.S. citizens may be eligible for a loan to travel to the United States. Loans must be repaid, and passports are limited until repayment.', link: { label: 'About repatriation loans', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
+          { title: 'Wiring money directly', text: 'Use a commercial money transfer service such as Western Union or MoneyGram. The recipient will need proof of identity such as a passport. Be wary of international financial scams.', detail: 'Money transfer cost comparison tools online can help you identify the best option. If you cannot reach family, friends, a bank, or an employer yourself, the American Citizen Services unit at the embassy can help you make contact.', link: { label: 'Sending money to a citizen abroad', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
+          { title: 'Sending money through the Department of State', text: 'Family or friends may send funds through the Department of State for delivery to a destitute U.S. citizen at the nearest embassy. A $30 fee applies.', detail: 'This route is for when the commercial options are not available or feasible. The $30 fee covers establishing an account and transferring the funds, which are delivered to the recipient at the nearest U.S. embassy or consulate.', link: { label: 'How the Department of State can help', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
+          { title: 'Repatriation loans', text: 'Destitute U.S. citizens may be eligible for a loan to travel to the United States. Loans must be repaid, and passports are limited until repayment.', detail: 'A repatriation loan must eventually be repaid to the U.S. government. Your passport is limited at the time the loan is issued, and in most cases a new passport will not be issued until the loan is paid in full. Contact the embassy for more information.', link: { label: 'About repatriation loans', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
         ],
       },
       {
@@ -665,9 +689,9 @@ export const citizens = {
         id: 'financial', title: 'Təcili maliyyə yardımı',
         intro: 'Xaricdə təcili vəsaitə ehtiyacı olan ABŞ vətəndaşları əvvəlcə ailə, dostlar, bank və ya işəgötürənlə əlaqə saxlamalıdır. Bu mümkün olmadıqda Dövlət Departamenti kömək edə bilər.',
         cards: [
-          { title: 'Birbaşa pul köçürməsi', text: 'Western Union və ya MoneyGram kimi kommersiya pul köçürmə xidmətindən istifadə edin. Alan şəxs pasport kimi şəxsiyyət sənədi təqdim etməlidir. Beynəlxalq maliyyə saxtakarlığından ehtiyatlı olun.', link: { label: 'Xaricdəki vətəndaşa pul göndərmək', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
-          { title: 'Dövlət Departamenti vasitəsilə pul göndərmək', text: 'Ailə və ya dostlar ehtiyac içində olan ABŞ vətəndaşına ən yaxın səfirlikdə çatdırılmaq üçün Dövlət Departamenti vasitəsilə vəsait göndərə bilər. 30 ABŞ dolları haqq tutulur.', link: { label: 'Dövlət Departamenti necə kömək edə bilər', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
-          { title: 'Repatriasiya kreditləri', text: 'Ehtiyac içində olan ABŞ vətəndaşları Amerika Birləşmiş Ştatlarına qayıtmaq üçün kredit ala bilər. Kredit geri ödənilməli, ödənilənədək pasport məhdudlaşdırılır.', link: { label: 'Repatriasiya kreditləri haqqında', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
+          { title: 'Birbaşa pul köçürməsi', text: 'Western Union və ya MoneyGram kimi kommersiya pul köçürmə xidmətindən istifadə edin. Alan şəxs pasport kimi şəxsiyyət sənədi təqdim etməlidir. Beynəlxalq maliyyə saxtakarlığından ehtiyatlı olun.', detail: 'Onlayn pul köçürmə xərclərini müqayisə edən vasitələr ən sərfəli variantı tapmağa kömək edə bilər. Ailənizlə, dostlarınızla, bankınızla və ya işəgötürəninizlə özünüz əlaqə saxlaya bilmirsinizsə, səfirliyin ABŞ Vətəndaşlarına Xidmət bölməsi əlaqə qurmağa kömək edə bilər.', link: { label: 'Xaricdəki vətəndaşa pul göndərmək', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
+          { title: 'Dövlət Departamenti vasitəsilə pul göndərmək', text: 'Ailə və ya dostlar ehtiyac içində olan ABŞ vətəndaşına ən yaxın səfirlikdə çatdırılmaq üçün Dövlət Departamenti vasitəsilə vəsait göndərə bilər. 30 ABŞ dolları haqq tutulur.', detail: 'Bu yol kommersiya variantları mövcud olmadıqda və ya mümkün olmadıqda nəzərdə tutulub. 30 dollarlıq rüsum hesabın açılmasını və vəsaitin köçürülməsini əhatə edir; vəsait ən yaxın ABŞ səfirliyində və ya konsulluğunda təhvil verilir.', link: { label: 'Dövlət Departamenti necə kömək edə bilər', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
+          { title: 'Repatriasiya kreditləri', text: 'Ehtiyac içində olan ABŞ vətəndaşları Amerika Birləşmiş Ştatlarına qayıtmaq üçün kredit ala bilər. Kredit geri ödənilməli, ödənilənədək pasport məhdudlaşdırılır.', detail: 'Repatriasiya krediti sonradan ABŞ hökumətinə qaytarılmalıdır. Kredit verilən zaman pasportunuzun etibarlılığı məhdudlaşdırılır və əksər hallarda kredit tam ödənilənə qədər yeni pasport verilmir. Ətraflı məlumat üçün səfirliklə əlaqə saxlayın.', link: { label: 'Repatriasiya kreditləri haqqında', href: 'https://travel.state.gov/content/travel/en/international-travel/emergencies/sending-money-abroad.html', external: true } },
         ],
       },
       {

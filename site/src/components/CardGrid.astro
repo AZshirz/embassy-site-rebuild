@@ -1,16 +1,36 @@
 ---
 // A responsive grid of USWDS cards. Each card has a heading, a sentence, and one clear action.
-import type { Card } from '../data/content';
-const { cards, headingLevel = 'h3', cols = 3 } = Astro.props as { cards: Card[]; headingLevel?: 'h2' | 'h3' | 'h4'; cols?: 2 | 3 };
+//
+// A card may also carry `detail`: longer text folded behind a disclosure, so the grid stays
+// scannable while the fuller answer is one click away rather than one page load away. This uses
+// the browser's own <details>/<summary>, which means no JavaScript, no inline script for the CSP
+// to allow, keyboard and screen-reader behaviour for free, and text that is still reachable when
+// scripting is disabled. The card's own link stays visible either way: on a government site the
+// route to the service must never be the thing hidden behind an interaction.
+import type { Card, Lang } from '../data/content';
+import { ui } from '../data/content';
+
+const { cards, lang, headingLevel = 'h3', cols = 3 } = Astro.props as {
+  cards: Card[]; lang: Lang; headingLevel?: 'h2' | 'h3' | 'h4'; cols?: 2 | 3;
+};
 const Heading = headingLevel;
 const colClass = cols === 2 ? 'tablet:grid-col-6' : 'tablet:grid-col-6 desktop:grid-col-4';
+const moreLabel = ui[lang].moreDetails;
 ---
 <ul class="usa-card-group">
   {cards.map((c) => (
     <li class:list={['usa-card', colClass]}>
       <div class="usa-card__container">
         <div class="usa-card__header"><Heading class="usa-card__heading">{c.title}</Heading></div>
-        <div class="usa-card__body"><p>{c.text}</p></div>
+        <div class="usa-card__body">
+          <p>{c.text}</p>
+          {c.detail && (
+            <details class="site-card__more">
+              <summary>{moreLabel}</summary>
+              <p>{c.detail}</p>
+            </details>
+          )}
+        </div>
         <div class="usa-card__footer">
           <a class="usa-button usa-button--outline" href={c.link.href} rel={c.link.external ? 'noopener' : undefined}>
             {c.link.label}

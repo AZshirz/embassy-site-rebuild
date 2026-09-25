@@ -11,14 +11,23 @@ const { lang } = Astro.props as { lang: Lang };
 const t = ui[lang].search;
 ---
 <Base lang={lang} title={t.title} description={t.lead} path="/search/">
+  <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <PageHeading title={t.title} lead={t.lead} />
     <form class="usa-search usa-search--big" role="search" method="get" action={t.href}>
       <label class="usa-sr-only" for="search-page-field">{t.label}</label>
       <input class="usa-input" id="search-page-field" type="search" name="q" placeholder={t.placeholder} required minlength="2" maxlength="100" />
       <button class="usa-button" type="submit">{t.button}</button>
     </form>
     <p class="margin-top-2"><a class="usa-link" href={ui[lang].ask.href}>{ui[lang].ask.title} →</a></p>
+
+    <div class="site-suggest margin-top-4">
+      <h2 class="site-suggest__title">{t.examplesTitle}</h2>
+      <ul class="site-chips">
+        {t.examples.map((q) => (
+          <li><a class="site-chip" href={`${t.href}?q=${encodeURIComponent(q)}`}>{q}</a></li>
+        ))}
+      </ul>
+    </div>
 
     <div id="search-results" class="margin-top-4" aria-live="polite"
       data-api={API_URL} data-lang={lang}

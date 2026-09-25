@@ -1,7 +1,7 @@
 # Daily check of the State Department travel-advisory feed.
 #
 # What it does: runs tools/fetch_alerts.py. If Azerbaijan's advisory level or date changed,
-# it commits the update to alerts.json (site copy + API fallback copy) as github-actions[bot] and pushes.
+# it commits the update to alerts.json (site copy + API fallback copy) as the repository owner and pushes.
 # That push triggers the normal Cloudflare build, so the live site's alert strip updates itself.
 #
 # What it does NOT do: commit anything when nothing changed (most days). The only trace of a
@@ -38,8 +38,11 @@ jobs:
           fi
           LEVEL=$(python -c "import json; print(json.load(open('site/src/data/alerts.json'))['advisory']['level'])")
           DATE=$(python -c "import json; print(json.load(open('site/src/data/alerts.json'))['advisory']['published'])")
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Commit as the repository owner, not as github-actions[bot]. A bot author would show up
+          # permanently in GitHub's contributor list the first day the advisory changes, and this
+          # project is deliberately single-author.
+          git config user.name "Adam Shirzadian"
+          git config user.email "330568160+AZshirz@users.noreply.github.com"
           git add site/src/data/alerts.json api/data/alerts.json
           git commit -m "chore(alerts): Azerbaijan travel advisory is Level ${LEVEL} (travel.state.gov, ${DATE})"
           git push

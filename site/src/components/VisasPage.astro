@@ -60,7 +60,7 @@ const t = visas[lang];
   </ul>
 
   <h2 id="types">{t.typesTitle}</h2>
-  <CardGrid cards={t.types} />
+  <CardGrid cards={t.types} lang={lang} />
 
   <h2 id="contact">{t.contactTitle}</h2>
   <p>{t.contactText}</p>
@@ -72,7 +72,7 @@ const t = visas[lang];
   <p><a class="usa-link usa-link--external" href={t.navigatorLink.href} rel="noopener">{t.navigatorLink.label}</a></p>
 
   <h2 id="rights">{t.rightsTitle}</h2>
-  <CardGrid cards={t.rights} cols={2} />
+  <CardGrid cards={t.rights} lang={lang} cols={2} />
 
   <h2 id="resources">{t.resourcesTitle}</h2>
   <ul class="usa-list">

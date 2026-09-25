@@ -13,8 +13,8 @@ const t = ui[lang].ask;
 const searchHref = ui[lang].search.href;
 ---
 <Base lang={lang} title={t.title} description={t.lead} path="/ask/">
+  <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <PageHeading title={t.title} lead={t.lead} />
 
     <form class="usa-form usa-form--large" id="ask-form" data-api={API_URL} data-lang={lang}
       data-thinking={t.thinking} data-sources={t.sources} data-grounded={t.grounded} data-not-grounded={t.notGrounded}
@@ -25,6 +25,15 @@ const searchHref = ui[lang].search.href;
       <button class="usa-button margin-top-2" type="submit" id="ask-submit">{t.button}</button>
       <p class="font-body-3xs text-base-dark margin-top-1"><a class="usa-link" href={searchHref}>{t.searchLink}</a></p>
     </form>
+
+    <div class="site-suggest margin-top-3">
+      <h2 class="site-suggest__title">{t.examplesTitle}</h2>
+      <ul class="site-chips site-chips--stacked">
+        {t.examples.map((q) => (
+          <li><a class="site-chip" href={`${t.href}?q=${encodeURIComponent(q)}`}>{q}</a></li>
+        ))}
+      </ul>
+    </div>
 
     <div id="ask-status" class="margin-top-3" aria-live="polite"></div>
     <div id="ask-answer" class="margin-top-2" aria-live="polite"></div>

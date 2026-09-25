@@ -5,6 +5,24 @@
   --site-navy: #162e51;   /* USWDS "primary-darker" */
   --site-blue: #005ea2;   /* USWDS "primary" */
   --site-red:  #b50909;   /* USWDS "secondary-dark" */
+
+  /* Section bands. The page used to alternate white and a neutral grey (#f0f0f0), which read as
+     an absence of colour rather than a choice. These are the same lightness range, pulled toward
+     the navy/blue the rest of the site already uses, so the bands belong to the palette.
+     Two tones, not three. An earlier pass used three light tints, and the step between the two
+     lightest was 0.043 in relative luminance - far too small to read as a boundary, so three
+     sections ran together into one slightly uneven surface. These two are 0.182 apart, and the
+     page alternates strictly between them so every section edge is a full step.
+     Both clear 4.5:1 against body text, links, muted text, the navy headings and the red accent;
+     the tightest pairing is the link colour on the darker band at 5.03:1. */
+  --site-band-soft: #f2f6fa;   /* the lighter of the two alternating bands */
+  --site-band-deep: #d5e0ec;   /* the darker one */
+  --site-line:      #d3dde8;   /* hairline in the same family, instead of a neutral grey */
+
+  /* One elevation for the whole site. Photos, report covers and cards each had their own
+     shadow (or none), which made them look like parts of different designs. Tinted navy rather
+     than black so it sits on the coloured bands without going muddy. */
+  --site-shadow: 0 1px 2px rgba(22, 46, 81, 0.10), 0 4px 12px rgba(22, 46, 81, 0.07);
 }
 
 body {
@@ -32,9 +50,28 @@ body {
 .site-seal {
   flex: none;
 }
+/* The emergency button sits inside USWDS's secondary nav list, whose own link rule
+   (.usa-nav__secondary-item a, colour #71767a) beat .usa-button's white and painted grey text
+   on the red button - 1.0:1, the same luminance as its background, so the word "Emergency" was
+   effectively invisible on the live site. Lighthouse scored accessibility 100 throughout and
+   never flagged it.
+   The fix restores white, and moves the background to the darker red the emergency summary box
+   already uses: 6.98:1 rather than the 4.61:1 white-on-#d83933 would have given, and one red
+   for every emergency affordance on the site instead of two. */
 .site-emergency-btn {
   margin: 0;
   padding: 0.5rem 1rem;
+}
+.usa-nav__secondary-item .site-emergency-btn,
+.usa-nav__secondary-item .site-emergency-btn:visited {
+  background-color: var(--site-red);
+  color: #fff;
+}
+.usa-nav__secondary-item .site-emergency-btn:hover,
+.usa-nav__secondary-item .site-emergency-btn:focus,
+.usa-nav__secondary-item .site-emergency-btn:active {
+  background-color: #8b0000;
+  color: #fff;
 }
 @media (min-width: 64em) {
   .usa-nav__secondary-links .usa-nav__secondary-item {
@@ -146,18 +183,83 @@ body {
 }
 .site-report img {
   flex: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--site-shadow);
+}
+
+/* Expandable card detail. The browser's own <details>, so it needs no JavaScript and no inline
+   script; the only work here is replacing the default disclosure triangle with a chevron that
+   rotates on open. The summary is padded to stay above the 24px minimum tap target. */
+.site-card__more {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--site-line);
+  padding-top: 0.25rem;
+}
+.site-card__more > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  color: var(--site-blue);
+  font-weight: 700;
+  font-size: 0.95rem;
+  list-style: none;
+}
+.site-card__more > summary::-webkit-details-marker {
+  display: none;
+}
+.site-card__more > summary::before {
+  content: "";
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-bottom: 0.15rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+.site-card__more[open] > summary::before {
+  transform: rotate(-135deg);
+  margin-bottom: -0.15rem;
+}
+.site-card__more > summary:hover {
+  text-decoration: underline;
+}
+.site-card__more > p {
+  margin: 0.4rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-card__more > summary::before {
+    transition: none;
+  }
+}
+
+/* News cards: same elevation and hairline as everything else, so a band of cards does not
+   look like a different component library from the photos above it. */
+.site-section .usa-card__container {
+  border-color: var(--site-line);
+  box-shadow: var(--site-shadow);
 }
 
 /* Sections */
 .site-section {
   padding: 2.5rem 0;
 }
-.site-section--alt {
-  background: #f0f0f0;
+.site-section--soft {
+  background: var(--site-band-soft);
 }
-.site-section h2 {
+.site-section--deep {
+  background: var(--site-band-deep);
+}
+/* Short navy rule above each section heading: marks where a section starts without needing
+   a full-width divider, and gives the headings the same accent the header already uses. */
+.site-section > .grid-container > h2 {
   margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 4px solid var(--site-navy);
+  display: inline-block;
 }
 
 /* Emergency summary box: red accent instead of the default blue */
@@ -208,7 +310,7 @@ body {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--site-shadow);
 }
 .site-leader h3 {
   margin: 0;
@@ -220,15 +322,24 @@ body {
 
 /* Footer */
 .site-footer {
-  background: #f0f0f0;
+  background: var(--site-band-deep);
+  border-top: 4px solid var(--site-navy);
 }
 .site-footer__links li {
   margin-bottom: 0.5rem;
 }
 
-/* Content pages: two-column layout with in-page navigation */
+/* Content pages: two-column layout with in-page navigation.
+   The heading is a full-bleed band (the component carries its own .grid-container), so the
+   inner pages open on colour instead of on white the way the home page opens on the hero. */
 .site-page-heading {
-  padding: 2rem 0 0.5rem;
+  background: var(--site-band-soft);
+  border-bottom: 1px solid var(--site-line);
+  padding: 2.5rem 0 2rem;
+  margin-bottom: 2rem;
+}
+.site-page-heading h1 {
+  color: var(--site-navy);
 }
 .site-content h2 {
   scroll-margin-top: 1rem;
@@ -276,6 +387,65 @@ body {
   .site-header .usa-nav__secondary {
     bottom: 3.5rem;
   }
+}
+
+/* Suggested searches and example questions. The Search and Ask pages were a heading, a form and
+   then nothing, which told a visitor neither what to type nor what the site can answer. Each chip
+   is an ordinary link to ?q=..., so it needs no JavaScript, opens in a new tab like any link, and
+   is shareable; search.js already reads ?q= and ask.js now prefills from it. */
+.site-suggest__title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  color: var(--site-navy);
+}
+.site-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.site-chips--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.site-chip {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--site-line);
+  border-radius: 999px;
+  background: var(--site-band-soft);
+  color: var(--site-blue);
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+.site-chip:hover,
+.site-chip:focus {
+  background: var(--site-band-deep);
+  color: var(--site-navy);
+  text-decoration: underline;
+}
+
+/* Static map of the embassy. A flat image served from this origin, not an embed: the CSP is
+   img-src 'self' and script-src 'self', so a Leaflet/Google/Mapbox map would mean widening it in
+   three places, loading third-party script into a government-styled page, and letting a third
+   party see every visitor. Generated by tools/make_map.py; ODbL requires the credit below. */
+.site-map {
+  display: block;
+  max-width: 32rem;
+  margin: 0.5rem 0 0.4rem;
+}
+.site-map img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--site-line);
+  box-shadow: var(--site-shadow);
+}
+.site-map__credit {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: #565c65;
 }
 
 /* Ask page: a question is one or two lines, not an essay */

@@ -14,8 +14,8 @@ const pages = ui[lang].primaryNav.map((p) => ({ label: p.label, href: p.href.spl
   .filter((p, i, all) => all.findIndex((q) => q.href === p.href) === i);
 ---
 <Base lang={lang} title={t.title} description={t.lead} path="/feedback/">
+  <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <PageHeading title={t.title} lead={t.lead} />
     <form class="usa-form usa-form--large" id="feedback-form" method="post" action={`${API_URL}/feedback`} novalidate
       data-api={API_URL} data-sending={t.sending} data-thanks={t.thanks} data-reference={t.reference}
       data-too-many={t.tooMany} data-error={t.error}>

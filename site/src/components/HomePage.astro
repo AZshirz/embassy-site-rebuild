@@ -30,10 +30,10 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section" aria-labelledby="needs-heading">
+  <section class="site-section site-section--soft" aria-labelledby="needs-heading">
     <div class="grid-container">
       <h2 id="needs-heading">{t.needTitle}</h2>
-      <CardGrid cards={t.needs} />
+      <CardGrid cards={t.needs} lang={lang} />
       <h3 class="margin-top-3">{t.moreTitle}</h3>
       <ul class="site-inline-links">
         {t.moreLinks.map((l) => (
@@ -43,7 +43,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section site-section--alt" aria-labelledby="news-heading">
+  <section class="site-section site-section--deep" aria-labelledby="news-heading">
     <div class="grid-container">
       <h2 id="news-heading">{t.newsTitle}</h2>
       <ul class="usa-card-group">
@@ -80,7 +80,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section" id="contact" aria-labelledby="contact-heading">
+  <section class="site-section site-section--soft" id="contact" aria-labelledby="contact-heading">
     <div class="grid-container">
       <h2 id="contact-heading">{t.contactTitle}</h2>
       <div class="grid-row grid-gap-lg">
@@ -91,7 +91,13 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
             {embassy.address.street}<br />
             {embassy.address.postal} {embassy.address.city}, {embassy.address.country}
           </address>
-          <p><a class="usa-link" href={mapHref} rel="noopener">{t.mapLink}</a></p>
+          <a class="site-map" href={mapHref} rel="noopener">
+            <img src="/img/map-embassy-600.webp"
+              srcset="/img/map-embassy-600.webp 600w, /img/map-embassy-1200.webp 1200w"
+              sizes="(min-width: 40em) 32rem, 100vw" width="600" height="270"
+              alt={t.mapAlt} loading="lazy" decoding="async" />
+          </a>
+          <p class="site-map__credit">{t.mapCredit} · <a class="usa-link" href={mapHref} rel="noopener">{t.mapLink}</a></p>
 
           <h3>{t.phoneLabel}</h3>
           <p><a href={embassy.phoneHref}>{embassy.phone}</a></p>
@@ -130,7 +136,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section site-section--alt" aria-labelledby="leaders-heading">
+  <section class="site-section site-section--deep" aria-labelledby="leaders-heading">
     <div class="grid-container">
       <h2 id="leaders-heading">{t.leadersTitle}</h2>
       <h3>{t.missionLeadersTitle}</h3>
@@ -140,7 +146,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section" aria-labelledby="reports-heading">
+  <section class="site-section site-section--soft" aria-labelledby="reports-heading">
     <div class="grid-container">
       <h2 id="reports-heading">{t.reportsTitle}</h2>
       <ul class="site-reports">
