@@ -2,7 +2,7 @@
 // Site header: logo, ONE primary nav (rendered once and made responsive with CSS,
 // instead of the original's separate desktop + mobile copies), language switch, emergency button.
 import type { Lang } from '../data/content';
-import { ui } from '../data/content';
+import { ui, embassy, hoursAttr } from '../data/content';
 const { lang, currentPath } = Astro.props as { lang: Lang; currentPath: string };
 const t = ui[lang];
 const otherLang: Lang = lang === 'en' ? 'az' : 'en';
@@ -18,6 +18,11 @@ const isCurrent = (href: string) => href === currentPath;
             {t.siteName}
           </a>
         </em>
+        <!-- Filled in by public/js/site.js from the data attributes, in Baku local time. Starts
+             hidden so it never shows a stale or wrong state when scripting is unavailable. -->
+        <span class="site-hours-status site-hours-status--header" hidden
+          data-hours-status data-hours={hoursAttr} data-timezone={embassy.timezone}
+          data-open-label={t.hours.openNow} data-closed-label={t.hours.closedNow}></span>
       </div>
       <button type="button" class="usa-menu-btn">{t.menu}</button>
     </div>

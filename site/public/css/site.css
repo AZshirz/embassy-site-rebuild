@@ -409,6 +409,21 @@ body {
   font-weight: 700;
   font-size: 0.9rem;
 }
+/* The header copy of the badge. It sits in the navbar rather than the secondary nav, because
+   the secondary nav collapses behind the menu button on a phone - and "is the embassy open right
+   now?" is exactly the question someone asks on a phone. */
+.site-hours-status--header {
+  font-size: 0.78rem;
+  padding: 0.1rem 0.6rem;
+  white-space: nowrap;
+}
+.site-header .usa-logo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+
 .site-hours-status--open {
   background: #ecf3ec;
   color: #216e1f;   /* USWDS success-darker: 5.6:1 on this background (WCAG AA needs 4.5:1) */

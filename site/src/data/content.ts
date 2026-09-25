@@ -328,6 +328,10 @@ export const embassy = {
 
 // ---------- Home page ----------
 
+/** Opening hours as "HH:MM-HH:MM" or "closed", Monday first - the form public/js/site.js reads
+ *  from data-hours. Derived here so the header and the home page cannot disagree about it. */
+export const hoursAttr = embassy.hours.map((h) => (h ? `${h.open}-${h.close}` : 'closed')).join(',');
+
 export const home = {
   en: {
     title: 'Home',
