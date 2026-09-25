@@ -20,6 +20,15 @@ const t = ui[lang].search;
     </form>
     <p class="margin-top-2"><a class="usa-link" href={ui[lang].ask.href}>{ui[lang].ask.title} →</a></p>
 
+    <div class="site-suggest margin-top-4">
+      <h2 class="site-suggest__title">{t.examplesTitle}</h2>
+      <ul class="site-chips">
+        {t.examples.map((q) => (
+          <li><a class="site-chip" href={`${t.href}?q=${encodeURIComponent(q)}`}>{q}</a></li>
+        ))}
+      </ul>
+    </div>
+
     <div id="search-results" class="margin-top-4" aria-live="polite"
       data-api={API_URL} data-lang={lang}
       data-results-for={t.resultsFor} data-no-results={t.noResults} data-error={t.error}>

@@ -26,6 +26,15 @@ const searchHref = ui[lang].search.href;
       <p class="font-body-3xs text-base-dark margin-top-1"><a class="usa-link" href={searchHref}>{t.searchLink}</a></p>
     </form>
 
+    <div class="site-suggest margin-top-3">
+      <h2 class="site-suggest__title">{t.examplesTitle}</h2>
+      <ul class="site-chips site-chips--stacked">
+        {t.examples.map((q) => (
+          <li><a class="site-chip" href={`${t.href}?q=${encodeURIComponent(q)}`}>{q}</a></li>
+        ))}
+      </ul>
+    </div>
+
     <div id="ask-status" class="margin-top-3" aria-live="polite"></div>
     <div id="ask-answer" class="margin-top-2" aria-live="polite"></div>
 

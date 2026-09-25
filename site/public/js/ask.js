@@ -14,6 +14,15 @@
   var button = document.getElementById('ask-submit');
   var field = document.getElementById('ask-question');
 
+  // An example question links to ?q=... ; fill the box from it so the visitor reads the question
+  // before sending it. Deliberately not auto-submitted - following a link should not fire a
+  // request on arrival - and clamped to the same 300 characters the API accepts.
+  var preset = new URLSearchParams(window.location.search).get('q');
+  if (preset) {
+    field.value = preset.slice(0, 300);
+    field.focus();
+  }
+
   function el(tag, attrs, children) {
     var node = document.createElement(tag);
     Object.keys(attrs || {}).forEach(function (k) { node.setAttribute(k, attrs[k]); });

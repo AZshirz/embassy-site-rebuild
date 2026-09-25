@@ -68,6 +68,8 @@ export const ui = {
       noResults: 'No results. Try a different word, or browse the pages in the menu.',
       needsJs: 'Search needs JavaScript. You can also browse the pages from the menu above.',
       error: 'Search is temporarily unavailable. Please try again in a moment.',
+      examplesTitle: 'Common searches',
+      examples: ['passport', 'visa interview', 'emergency assistance', 'notarial services', 'studying in the United States', 'voting from abroad'],
       href: '/search/',
     },
     ask: {
@@ -85,6 +87,13 @@ export const ui = {
       needsJs: 'The assistant needs JavaScript. You can also use the search box above.',
       disclaimer: 'This is an experimental assistant. For anything official, use the linked pages or contact the embassy.',
       searchLink: 'Or search the site instead',
+      examplesTitle: 'Questions this assistant can answer',
+      examples: [
+        'How do I renew my passport while living in Azerbaijan?',
+        'When is the embassy open?',
+        'Where is the embassy located?',
+        'What is the phone number for visa questions?',
+      ],
       href: '/ask/',
     },
     feedback: {
@@ -176,6 +185,8 @@ export const ui = {
       noResults: 'Nəticə tapılmadı. Başqa söz sınayın və ya menyudan səhifələrə baxın.',
       needsJs: 'Axtarış üçün JavaScript lazımdır. Səhifələrə yuxarıdakı menyudan da baxa bilərsiniz.',
       error: 'Axtarış müvəqqəti əlçatan deyil. Bir azdan yenidən cəhd edin.',
+      examplesTitle: 'Tez-tez axtarılanlar',
+      examples: ['pasport', 'viza müsahibəsi', 'təcili yardım', 'notariat xidmətləri', 'ABŞ-da təhsil', 'xaricdən səsvermə'],
       href: '/az/search/',
     },
     ask: {
@@ -193,6 +204,13 @@ export const ui = {
       needsJs: 'Köməkçi üçün JavaScript lazımdır. Yuxarıdakı axtarış qutusundan da istifadə edə bilərsiniz.',
       disclaimer: 'Bu eksperimental köməkçidir. Rəsmi məlumat üçün keçid verilən səhifələrdən istifadə edin və ya səfirliklə əlaqə saxlayın.',
       searchLink: 'Və ya saytda axtarış edin',
+      examplesTitle: 'Bu köməkçinin cavab verə biləcəyi suallar',
+      examples: [
+        'Azərbaycanda yaşayarkən pasportumu necə yeniləyə bilərəm?',
+        'Səfirlik nə vaxt açıqdır?',
+        'Səfirlik harada yerləşir?',
+        'Viza sualları üçün telefon nömrəsi nədir?',
+      ],
       href: '/az/ask/',
     },
     feedback: {
@@ -361,6 +379,8 @@ export const home = {
     faxLabel: 'Fax',
     followLabel: 'Follow the embassy',
     mapLink: 'Open in OpenStreetMap',
+    mapAlt: 'Street map of central Baku with the U.S. Embassy marked. Opens OpenStreetMap.',
+    mapCredit: 'Map data © OpenStreetMap contributors',
     reportsTitle: 'U.S. Department of State reports',
     reports: [
       { label: '2025 Trafficking in Persons Report', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true, img: '/img/photos/report-tip-240.webp', width: 120, height: 156 },
@@ -425,6 +445,8 @@ export const home = {
     faxLabel: 'Faks',
     followLabel: 'Səfirliyi izləyin',
     mapLink: 'OpenStreetMap-də açın',
+    mapAlt: 'Bakının mərkəzinin xəritəsi, ABŞ Səfirliyi işarələnib. OpenStreetMap-i açır.',
+    mapCredit: 'Xəritə məlumatları © OpenStreetMap iştirakçıları',
     reportsTitle: 'ABŞ Dövlət Departamentinin hesabatları',
     reports: [
       { label: 'İnsan alveri üzrə 2025-ci il hesabatı', href: 'https://www.state.gov/trafficking-in-persons-report/', external: true, img: '/img/photos/report-tip-240.webp', width: 120, height: 156 },

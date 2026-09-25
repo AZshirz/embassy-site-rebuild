@@ -91,7 +91,13 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
             {embassy.address.street}<br />
             {embassy.address.postal} {embassy.address.city}, {embassy.address.country}
           </address>
-          <p><a class="usa-link" href={mapHref} rel="noopener">{t.mapLink}</a></p>
+          <a class="site-map" href={mapHref} rel="noopener">
+            <img src="/img/map-embassy-600.webp"
+              srcset="/img/map-embassy-600.webp 600w, /img/map-embassy-1200.webp 1200w"
+              sizes="(min-width: 40em) 32rem, 100vw" width="600" height="270"
+              alt={t.mapAlt} loading="lazy" decoding="async" />
+          </a>
+          <p class="site-map__credit">{t.mapCredit} · <a class="usa-link" href={mapHref} rel="noopener">{t.mapLink}</a></p>
 
           <h3>{t.phoneLabel}</h3>
           <p><a href={embassy.phoneHref}>{embassy.phone}</a></p>
