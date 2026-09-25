@@ -65,6 +65,39 @@ Two design patterns these rules quietly forbid:
   Removing exactly this from the original is the project's central argument; see README.
 - **Any contrast below 4.5:1** → drops accessibility below 100 and fails CI.
 
+## Caching: nothing here is fingerprinted
+
+Astro hashes the assets it processes, but this site has none of those. Its CSS, JS, images and
+vendored USWDS files are copied verbatim out of `site/public/`, and the build produces no
+`_astro/` directory at all — every one of ~2,600 non-HTML files keeps a fixed name forever.
+
+Two consequences, both learned the hard way:
+
+- **Never mark these assets `immutable`.** `deploy-aws.yml` once did, on the assumption they were
+  fingerprinted. `immutable` tells a browser not to revalidate *even on reload*, so every visitor
+  was pinned to that day's stylesheet for a year, and the AWS site served new HTML with the old
+  CSS — white sections, an unreadable Emergency button — while Cloudflare rendered the same commit
+  correctly. **A CloudFront invalidation clears the CDN; it cannot reach a browser cache.** The
+  deploy smoke test now fails if `/css/site.css` comes back immutable.
+- **Reference stylesheets and scripts through `v()`** in `site/src/data/asset.ts`, which appends a
+  build-time content hash (`/css/site.css?v=f25fdb49`). A changed file gets a new URL and is
+  fetched; an unchanged one still comes from cache. This is also the only way to rescue browsers
+  that already hold a poisoned copy.
+
+## What the gates do not catch
+
+Both gates passed continuously through two real defects that reached production:
+
+- **Contrast inside a component's own cascade.** The header Emergency button rendered `#71767a` on
+  `#d83933` — a ratio of **1.0:1**, text exactly as bright as its background — because a USWDS nav
+  rule outranked `.usa-button`. Lighthouse reported accessibility **100** on every run.
+- **Anything cache-related.** Automated checks drive a fresh headless browser with an empty cache,
+  so they fetch what was just deployed by definition. The stale-stylesheet bug was invisible to
+  every check and obvious to anyone who had visited the site before.
+
+So: a green gate means no *known* regression, not a correct page. **After deploying, open both
+live sites in a real browser that has visited them before.** The gates cannot do this part.
+
 ## Deploy paths differ in safety — know which branch you are on
 
 - `aws`: `deploy-aws.yml` runs the accessibility gate **before** deploying. A regression stops
