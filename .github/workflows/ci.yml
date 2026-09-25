@@ -1,13 +1,14 @@
 # Runs on every push and pull request. Two independent jobs:
 #   site: build the static site, then fail if accessibility regresses (HTML audit + Lighthouse)
 #   api:  run the FastAPI test suite
-# Cloudflare deploys separately from `main`; a red run here is the signal to look before it goes live.
+# Cloudflare deploys separately from `main`, and does NOT wait for this workflow - so UI work is
+# done on a `design/**` branch, where this gate runs before anything is merged into `main`.
 
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "design/**"]
   pull_request:
 
 permissions:
