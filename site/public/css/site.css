@@ -276,6 +276,14 @@ body {
 .site-hours th {
   padding: 0.25rem 0.75rem 0.25rem 0;
 }
+.site-hours.usa-table,
+.site-hours.usa-table thead,
+.site-hours.usa-table tbody,
+.site-hours.usa-table tr,
+.site-hours.usa-table th,
+.site-hours.usa-table td {
+  background-color: transparent;
+}
 .site-hours-status {
   display: inline-block;
   border-radius: 999px;
@@ -327,6 +335,29 @@ body {
 }
 .site-footer__links li {
   margin-bottom: 0.5rem;
+}
+
+/* Inner-page sections. The home page alternates full-bleed bands; a content page's sections sit
+   inside the in-page-navigation column and cannot span the viewport, so these are panels in the
+   same two tones. Enough to show where one topic ends and the next begins - the Citizen Services
+   page ran six topics together down one white column. */
+.site-subsection {
+  padding: 1.25rem 1.5rem 1.75rem;
+  margin: 0 0 1.5rem;
+  border-radius: 4px;
+}
+.site-subsection--soft {
+  background: var(--site-band-soft);
+}
+.site-subsection--deep {
+  background: var(--site-band-deep);
+}
+.site-subsection > h2 {
+  display: inline-block;
+  margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 4px solid var(--site-navy);
+  scroll-margin-top: 1.5rem;
 }
 
 /* Content pages: two-column layout with in-page navigation.
