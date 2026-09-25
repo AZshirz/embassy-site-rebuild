@@ -161,6 +161,114 @@ body {
   gap: 0.5rem 1.5rem;
 }
 
+/* Social links with the icons USWDS already ships, masked so they take the link colour rather
+   than arriving as fixed-colour brand art. Self-hosted like everything else: the CSP is
+   img-src 'self', so a logo pulled from a CDN would both breach it and hand a third party a
+   record of every visitor to an embassy page.
+   The platform name stays visible beside each icon. An icon-only row is more compact, but it
+   asks people to recognise four glyphs on a page someone may be reading in an emergency, and
+   the name costs almost nothing. */
+.site-social {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.1rem;
+}
+.site-social__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0;
+  color: var(--site-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+.site-social__link:hover span:last-child,
+.site-social__link:focus span:last-child {
+  text-decoration: underline;
+}
+.site-social__icon {
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.site-social__icon--facebook {
+  -webkit-mask-image: url(/uswds/img/usa-icons/facebook.svg);
+  mask-image: url(/uswds/img/usa-icons/facebook.svg);
+}
+.site-social__icon--twitter {
+  -webkit-mask-image: url(/uswds/img/usa-icons/twitter.svg);
+  mask-image: url(/uswds/img/usa-icons/twitter.svg);
+}
+.site-social__icon--instagram {
+  -webkit-mask-image: url(/uswds/img/usa-icons/instagram.svg);
+  mask-image: url(/uswds/img/usa-icons/instagram.svg);
+}
+.site-social__icon--youtube {
+  -webkit-mask-image: url(/uswds/img/usa-icons/youtube.svg);
+  mask-image: url(/uswds/img/usa-icons/youtube.svg);
+}
+
+/* "More services" was five bare links trailing off mid-line - the weakest element on a page
+   otherwise built from cards. Same links, now tiles on a grid that fills the width at any
+   breakpoint, each carrying the USWDS launch icon because every one of them leaves this site. */
+.site-tiles {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  /* 10rem, not 13: the container is 64rem wide, so 13rem fitted four tracks and orphaned the
+     fifth link onto a row of its own. At 10rem all five sit on one line on a desktop and the
+     grid still reflows to three, two and one as the viewport narrows. */
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+.site-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 100%;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  border: 1px solid var(--site-line);
+  border-radius: 4px;
+  box-shadow: var(--site-shadow);
+  color: var(--site-blue);
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+}
+.site-tile:hover,
+.site-tile:focus {
+  border-color: var(--site-blue);
+}
+.site-tile:hover span:first-child,
+.site-tile:focus span:first-child {
+  text-decoration: underline;
+}
+.site-tile__arrow {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background-color: currentColor;
+  -webkit-mask-image: url(/uswds/img/usa-icons/launch.svg);
+  mask-image: url(/uswds/img/usa-icons/launch.svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 /* Report covers */
 .site-reports {
   list-style: none;
