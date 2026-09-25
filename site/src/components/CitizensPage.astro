@@ -18,8 +18,8 @@ const t = citizens[lang];
     </div>
   </div>
 
-  {t.sections.map((s, i) => (
-    <section class:list={['site-subsection', i % 2 === 0 ? 'site-subsection--soft' : 'site-subsection--deep']}>
+  {t.sections.map((s) => (
+    <section class="site-subsection">
       <h2 id={s.id}>{s.title}</h2>
       {s.id === 'emergency' && <EmergencyBox lang={lang} headingLevel="h3" id="acs-emergency-heading" />}
       {s.intro && <p>{s.intro}</p>}

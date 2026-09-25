@@ -1,4 +1,8 @@
 ---
+// The Visas page. Its seven sections are each a different shape - a process list, a card group
+// with photographs, two card grids, plain link lists - so unlike Citizen Services and Education
+// they cannot come from a mapped list of sections. They are wrapped by hand instead; the band
+// tone is decided by site.css from document order, so nothing here numbers itself.
 import type { Lang } from '../data/content';
 import { visas, embassy } from '../data/content';
 import ContentPage from './ContentPage.astro';
@@ -8,6 +12,9 @@ const { lang } = Astro.props as { lang: Lang };
 const t = visas[lang];
 ---
 <ContentPage lang={lang} title={t.title} lead={t.lead} description={t.lead} path="/visas/">
+  <!-- Deliberately not a band: this is already a full-width warning alert with its own strong
+       treatment, and nesting it inside a tinted panel muddies both. Being a <div>, it also stays
+       out of the :nth-of-type count that alternates the sections below. -->
   <div class="usa-alert usa-alert--warning" id="notices">
     <div class="usa-alert__body">
       <h2 class="usa-alert__heading">{t.noticeTitle}</h2>
@@ -18,66 +25,82 @@ const t = visas[lang];
     </div>
   </div>
 
-  <h2 id="what-is-a-visa">{t.whatTitle}</h2>
-  {t.whatText.map((p) => <p>{p}</p>)}
-  <p><a class="usa-link usa-link--external" href={t.vwpLink.href} rel="noopener">{t.vwpLink.label}</a></p>
+  <section class="site-subsection">
+    <h2 id="what-is-a-visa">{t.whatTitle}</h2>
+    {t.whatText.map((p) => <p>{p}</p>)}
+    <p><a class="usa-link usa-link--external" href={t.vwpLink.href} rel="noopener">{t.vwpLink.label}</a></p>
+  </section>
 
-  <h2 id="how-to-apply">{t.stepsTitle}</h2>
-  <ol class="usa-process-list">
-    {t.steps.map((s) => (
-      <li class="usa-process-list__item">
-        <h3 class="usa-process-list__heading">{s.title}</h3>
-        <p class="margin-top-05">{s.text}</p>
-      </li>
-    ))}
-  </ol>
-  <a class="usa-button" href={t.stepsLink.href} rel="noopener">{t.stepsLink.label}</a>
+  <section class="site-subsection">
+    <h2 id="how-to-apply">{t.stepsTitle}</h2>
+    <ol class="usa-process-list">
+      {t.steps.map((s) => (
+        <li class="usa-process-list__item">
+          <h3 class="usa-process-list__heading">{s.title}</h3>
+          <p class="margin-top-05">{s.text}</p>
+        </li>
+      ))}
+    </ol>
+    <a class="usa-button" href={t.stepsLink.href} rel="noopener">{t.stepsLink.label}</a>
 
-  <div class="usa-summary-box margin-top-4" role="region" aria-labelledby="wizard-heading">
-    <div class="usa-summary-box__body">
-      <h3 class="usa-summary-box__heading" id="wizard-heading">{t.wizardTitle}</h3>
-      <div class="usa-summary-box__text">
-        <p>{t.wizardText}</p>
-        <a class="usa-button usa-button--outline" href={t.wizardLink.href} rel="noopener">{t.wizardLink.label}</a>
+    <!-- The wizard box used to float between two sections with no home. Step 1 of the list above
+         says "use the visa types below or the Visa Wizard", so it belongs with the steps. -->
+    <div class="usa-summary-box margin-top-4" role="region" aria-labelledby="wizard-heading">
+      <div class="usa-summary-box__body">
+        <h3 class="usa-summary-box__heading" id="wizard-heading">{t.wizardTitle}</h3>
+        <div class="usa-summary-box__text">
+          <p>{t.wizardText}</p>
+          <a class="usa-button usa-button--outline" href={t.wizardLink.href} rel="noopener">{t.wizardLink.label}</a>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <h2 id="tips">{t.tipsTitle}</h2>
-  <p>{t.tipsIntro}</p>
-  <ul class="usa-card-group">
-    {t.tips.map((tip) => (
-      <li class="usa-card usa-card--flag-mobile tablet:grid-col-6 desktop:grid-col-4">
-        <div class="usa-card__container">
-          <div class="usa-card__media"><div class="usa-card__img">
-            <img src={tip.img} alt="" width="480" height="320" loading="lazy" decoding="async" />
-          </div></div>
-          <div class="usa-card__header"><h3 class="usa-card__heading font-heading-md">{tip.title}</h3></div>
-          <div class="usa-card__body"><p>{tip.text}</p></div>
-        </div>
-      </li>
-    ))}
-  </ul>
+  <section class="site-subsection">
+    <h2 id="tips">{t.tipsTitle}</h2>
+    <p>{t.tipsIntro}</p>
+    <ul class="usa-card-group">
+      {t.tips.map((tip) => (
+        <li class="usa-card usa-card--flag-mobile tablet:grid-col-6 desktop:grid-col-4">
+          <div class="usa-card__container">
+            <div class="usa-card__media"><div class="usa-card__img">
+              <img src={tip.img} alt="" width="480" height="320" loading="lazy" decoding="async" />
+            </div></div>
+            <div class="usa-card__header"><h3 class="usa-card__heading font-heading-md">{tip.title}</h3></div>
+            <div class="usa-card__body"><p>{tip.text}</p></div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
 
-  <h2 id="types">{t.typesTitle}</h2>
-  <CardGrid cards={t.types} lang={lang} />
+  <section class="site-subsection">
+    <h2 id="types">{t.typesTitle}</h2>
+    <CardGrid cards={t.types} lang={lang} />
+  </section>
 
-  <h2 id="contact">{t.contactTitle}</h2>
-  <p>{t.contactText}</p>
-  <ul class="usa-list">
-    <li><strong>{t.contactEmailLabel}:</strong> <a href={`mailto:${embassy.visaEmail}`}>{embassy.visaEmail}</a></li>
-    <li><strong>{t.contactAzLabel}:</strong> <a href={t.contactAzHref}>{t.contactAz}</a></li>
-    <li><strong>{t.contactUsLabel}:</strong> <a href={t.contactUsHref}>{t.contactUs}</a></li>
-  </ul>
-  <p><a class="usa-link usa-link--external" href={t.navigatorLink.href} rel="noopener">{t.navigatorLink.label}</a></p>
+  <section class="site-subsection">
+    <h2 id="contact">{t.contactTitle}</h2>
+    <p>{t.contactText}</p>
+    <ul class="usa-list">
+      <li><strong>{t.contactEmailLabel}:</strong> <a href={`mailto:${embassy.visaEmail}`}>{embassy.visaEmail}</a></li>
+      <li><strong>{t.contactAzLabel}:</strong> <a href={t.contactAzHref}>{t.contactAz}</a></li>
+      <li><strong>{t.contactUsLabel}:</strong> <a href={t.contactUsHref}>{t.contactUs}</a></li>
+    </ul>
+    <p><a class="usa-link usa-link--external" href={t.navigatorLink.href} rel="noopener">{t.navigatorLink.label}</a></p>
+  </section>
 
-  <h2 id="rights">{t.rightsTitle}</h2>
-  <CardGrid cards={t.rights} lang={lang} cols={2} />
+  <section class="site-subsection">
+    <h2 id="rights">{t.rightsTitle}</h2>
+    <CardGrid cards={t.rights} lang={lang} cols={2} />
+  </section>
 
-  <h2 id="resources">{t.resourcesTitle}</h2>
-  <ul class="usa-list">
-    {t.resources.map((r) => (
-      <li><a class="usa-link usa-link--external" href={r.href} rel="noopener">{r.label}</a></li>
-    ))}
-  </ul>
+  <section class="site-subsection">
+    <h2 id="resources">{t.resourcesTitle}</h2>
+    <ul class="usa-list">
+      {t.resources.map((r) => (
+        <li><a class="usa-link usa-link--external" href={r.href} rel="noopener">{r.label}</a></li>
+      ))}
+    </ul>
+  </section>
 </ContentPage>
