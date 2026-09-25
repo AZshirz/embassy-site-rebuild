@@ -10,11 +10,11 @@ const t = education[lang];
 <ContentPage lang={lang} title={t.title} lead={t.lead} description={t.lead} path="/education/">
   <p>{t.overview}</p>
 
-  {t.sections.map((s) => (
-    <>
+  {t.sections.map((s, i) => (
+    <section class:list={['site-subsection', i % 2 === 0 ? 'site-subsection--soft' : 'site-subsection--deep']}>
       <h2 id={s.id}>{s.title}</h2>
       {s.intro && <p>{s.intro}</p>}
       <CardGrid cards={s.cards} lang={lang} cols={2} />
-    </>
+    </section>
   ))}
 </ContentPage>

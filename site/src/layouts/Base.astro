@@ -7,6 +7,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import SiteAlerts from '../components/SiteAlerts.astro';
 import { API_CSP_SOURCE } from '../data/api';
+import { v } from '../data/asset';
 
 interface Props {
   lang: Lang;
@@ -64,9 +65,9 @@ const jsonLd = {
     <link rel="alternate" hreflang="x-default" href={site + enPath} />
     <link rel="icon" href="/uswds/img/favicons/favicon.ico" sizes="any" />
     <link rel="icon" href="/img/seal.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/uswds/css/uswds.min.css" />
-    <link rel="stylesheet" href="/css/site.css" />
-    <script src="/uswds/js/uswds-init.min.js" is:inline></script>
+    <link rel="stylesheet" href={v('/uswds/css/uswds.min.css')} />
+    <link rel="stylesheet" href={v('/css/site.css')} />
+    <script src={v('/uswds/js/uswds-init.min.js')} is:inline></script>
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
   </head>
   <body id="top">
@@ -90,7 +91,7 @@ const jsonLd = {
 
     <Footer lang={lang} />
 
-    <script src="/uswds/js/uswds.min.js" is:inline></script>
-    <script src="/js/site.js" defer is:inline></script>
+    <script src={v('/uswds/js/uswds.min.js')} is:inline></script>
+    <script src={v('/js/site.js')} defer is:inline></script>
   </body>
 </html>

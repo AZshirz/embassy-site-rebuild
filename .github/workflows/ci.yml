@@ -2,13 +2,13 @@
 #   site: build the static site, then fail if accessibility regresses (HTML audit + Lighthouse)
 #   api:  run the FastAPI test suite
 # Cloudflare deploys separately from `main`, and does NOT wait for this workflow - so UI work is
-# done on a `design/**` branch, where this gate runs before anything is merged into `main`.
+# done on a `design/**` or `fix/**` branch, where this gate runs before anything reaches `main`.
 
 name: CI
 
 on:
   push:
-    branches: [main, aws, "design/**"]
+    branches: [main, aws, "design/**", "fix/**"]
   pull_request:
 
 permissions:

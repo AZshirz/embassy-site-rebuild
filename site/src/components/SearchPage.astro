@@ -5,6 +5,7 @@ import type { Lang } from '../data/content';
 import { ui } from '../data/content';
 import { API_URL } from '../data/api';
 import Base from '../layouts/Base.astro';
+import { v } from '../data/asset';
 import PageHeading from './PageHeading.astro';
 
 const { lang } = Astro.props as { lang: Lang };
@@ -35,5 +36,5 @@ const t = ui[lang].search;
       <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
     </div>
   </div>
-  <script src="/js/search.js" defer is:inline></script>
+  <script src={v('/js/search.js')} defer is:inline></script>
 </Base>

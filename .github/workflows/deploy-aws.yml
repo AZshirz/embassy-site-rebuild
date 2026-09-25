@@ -174,13 +174,29 @@ jobs:
 
       - name: Publish the site to S3
         run: |
-          # Fingerprinted assets can be cached forever; HTML and JSON must revalidate so a
-          # deploy is visible immediately.
+          # NOTHING IN THIS BUILD IS FINGERPRINTED. Astro hashes the assets it processes itself,
+          # but this site has none of those: its CSS, JS, images and vendored USWDS files are all
+          # copied verbatim out of public/, so /css/site.css keeps that name for the life of the
+          # project. An earlier version of this step marked every one of them
+          # "max-age=31536000,immutable" on the assumption that they were fingerprinted. That
+          # pinned the stylesheet in every visitor's browser for a year and told the browser not
+          # to revalidate even on reload. The CloudFront invalidation below clears the CDN; it
+          # cannot reach a browser cache. The result was this site serving new HTML with a stale
+          # stylesheet - white sections, an unreadable Emergency button - while Cloudflare, which
+          # sends must-revalidate, rendered the same commit correctly.
+          #
+          # So: nothing is immutable here. HTML, JSON, CSS and JS revalidate on every request
+          # (cheap 304s, and CloudFront still absorbs the traffic at the edge). Images and USWDS
+          # assets get a day - long enough to be worth caching, short enough to heal itself.
+          # Pages also reference every stylesheet and script with a ?v=<content hash>, so a
+          # changed file gets a new URL regardless. See site/src/data/asset.ts.
           aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
-            --delete --exclude "*.html" --exclude "*.json" \
-            --cache-control "public,max-age=31536000,immutable"
+            --delete \
+            --exclude "*.html" --exclude "*.json" --exclude "css/*" --exclude "js/*" \
+            --cache-control "public,max-age=86400"
           aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
-            --delete --exclude "*" --include "*.html" --include "*.json" \
+            --delete --exclude "*" \
+            --include "*.html" --include "*.json" --include "css/*" --include "js/*" \
             --cache-control "public,max-age=0,must-revalidate"
 
       - name: Invalidate the CloudFront cache
@@ -224,6 +240,16 @@ jobs:
           fi
           if ! curl -sI "$URL/" | grep -qi "content-security-policy"; then
             echo "  FAIL  no Content-Security-Policy header"; fail=1
+          fi
+
+          # The stylesheet is NOT fingerprinted, so it must never come back immutable: such a
+          # copy outlives every future deploy in a visitor's browser and no invalidation can
+          # reach it. This shipped once and showed as a site stuck on its previous design.
+          CSS_CC=$(curl -sI "$URL/css/site.css" | grep -i "^cache-control")
+          echo "  css cache-control: ${CSS_CC:-<none>}"
+          if echo "$CSS_CC" | grep -qi "immutable"; then
+            echo "  FAIL  /css/site.css is served immutable; deploys cannot reach cached browsers"
+            fail=1
           fi
 
           [ "$fail" = "0" ] || { echo "smoke test failed"; exit 1; }
