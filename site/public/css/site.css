@@ -454,10 +454,17 @@ body {
   margin: 0 0 1.5rem;
   border-radius: 4px;
 }
-.site-subsection--soft {
+/* The tone comes from position in the document, not from a class on each section. Three page
+   templates were each computing the same `i % 2`, and the Visas page could not join them at all
+   because its sections are seven different shapes rather than a mapped list - hand-numbering
+   them would have drifted the first time one was reordered.
+   NOTE: :nth-of-type counts <section> siblings regardless of class, so every <section> inside
+   .site-content must be one of these bands. That holds on all three content pages; the Visas
+   notice is a <div> and is deliberately left unbanded. */
+.site-content > .site-subsection:nth-of-type(odd) {
   background: var(--site-band-soft);
 }
-.site-subsection--deep {
+.site-content > .site-subsection:nth-of-type(even) {
   background: var(--site-band-deep);
 }
 .site-subsection > h2 {
