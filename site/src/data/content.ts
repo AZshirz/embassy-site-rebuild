@@ -10,6 +10,8 @@ export const LANGS: Lang[] = ['en', 'az'];
 
 export interface Link { label: string; href: string; external?: boolean }
 export interface Card { title: string; text: string; link: Link; detail?: string }
+/** `icon` names a file in /uswds/img/usa-icons/ - the icons the design system already ships. */
+export interface SocialLink extends Link { icon: 'facebook' | 'twitter' | 'instagram' | 'youtube' }
 export interface Section { id: string; title: string; intro?: string; cards: Card[] }
 
 // ---------- Shared chrome (banner, header, footer, emergency box) ----------
@@ -305,11 +307,13 @@ export const embassy = {
   timezone: 'Asia/Baku',
   geo: { lat: 40.3777, lng: 49.8536 },
   social: [
-    { label: 'Facebook', href: 'https://www.facebook.com/usembassybaku' },
-    { label: 'X (Twitter)', href: 'https://x.com/USEmbassyBaku' },
-    { label: 'Instagram', href: 'https://www.instagram.com/usembassybaku/' },
-    { label: 'YouTube', href: 'https://www.youtube.com/user/usembassybaku' },
-  ] as Link[],
+    { label: 'Facebook', href: 'https://www.facebook.com/usembassybaku', icon: 'facebook' },
+    // USWDS ships the pre-rebrand bird as twitter.svg and has no X glyph; the label says X, the
+    // icon is the one the design system provides rather than a trademark fetched from elsewhere.
+    { label: 'X (Twitter)', href: 'https://x.com/USEmbassyBaku', icon: 'twitter' },
+    { label: 'Instagram', href: 'https://www.instagram.com/usembassybaku/', icon: 'instagram' },
+    { label: 'YouTube', href: 'https://www.youtube.com/user/usembassybaku', icon: 'youtube' },
+  ] as SocialLink[],
   originalSite: 'https://az.usembassy.gov/',
   contentReviewed: '2026-09-20',
   // Photos are official U.S. Government work from the original site, resized by tools/optimize_images.py

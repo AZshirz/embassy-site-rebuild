@@ -34,10 +34,15 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     <div class="grid-container">
       <h2 id="needs-heading">{t.needTitle}</h2>
       <CardGrid cards={t.needs} lang={lang} />
-      <h3 class="margin-top-3">{t.moreTitle}</h3>
-      <ul class="site-inline-links">
+      <h3 class="margin-top-4">{t.moreTitle}</h3>
+      <ul class="site-tiles">
         {t.moreLinks.map((l) => (
-          <li><a class="usa-link usa-link--external" href={l.href} rel="noopener">{l.label}</a></li>
+          <li>
+            <a class="site-tile" href={l.href} rel="noopener">
+              <span>{l.label}</span>
+              <span class="site-tile__arrow" aria-hidden="true"></span>
+            </a>
+          </li>
         ))}
       </ul>
     </div>
@@ -83,8 +88,12 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
   <section class="site-section site-section--soft" id="contact" aria-labelledby="contact-heading">
     <div class="grid-container">
       <h2 id="contact-heading">{t.contactTitle}</h2>
+      <!-- Three columns, not two. With address+map+phone+fax+social stacked in one half and a
+           seven-row table in the other, the table ran out first and left a column of empty space
+           beside the contact details. Splitting the details out fills the row and groups things
+           that belong together. -->
       <div class="grid-row grid-gap-lg">
-        <div class="tablet:grid-col-6">
+        <div class="tablet:grid-col-6 desktop:grid-col-5">
           <h3>{t.addressLabel}</h3>
           <address class="font-body-md" style="font-style: normal">
             {embassy.name}<br />
@@ -94,24 +103,13 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
           <a class="site-map" href={mapHref} rel="noopener">
             <img src="/img/map-embassy-600.webp"
               srcset="/img/map-embassy-600.webp 600w, /img/map-embassy-1200.webp 1200w"
-              sizes="(min-width: 40em) 32rem, 100vw" width="600" height="270"
+              sizes="(min-width: 64em) 26rem, (min-width: 40em) 32rem, 100vw" width="600" height="270"
               alt={t.mapAlt} loading="lazy" decoding="async" />
           </a>
           <p class="site-map__credit">{t.mapCredit} · <a class="usa-link" href={mapHref} rel="noopener">{t.mapLink}</a></p>
-
-          <h3>{t.phoneLabel}</h3>
-          <p><a href={embassy.phoneHref}>{embassy.phone}</a></p>
-          <h3>{t.faxLabel}</h3>
-          <p>{embassy.fax}</p>
-
-          <h3>{t.followLabel}</h3>
-          <ul class="site-inline-links">
-            {embassy.social.map((s) => (
-              <li><a class="usa-link usa-link--external" href={s.href} rel="noopener">{s.label}</a></li>
-            ))}
-          </ul>
         </div>
-        <div class="tablet:grid-col-6">
+
+        <div class="tablet:grid-col-6 desktop:grid-col-4">
           <h3>
             {u.hours.title}
             <span class="site-hours-status margin-left-1" hidden
@@ -131,6 +129,25 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
             </tbody>
           </table>
           <p class="font-body-2xs text-base-dark">{u.hours.timezone}</p>
+        </div>
+
+        <div class="tablet:grid-col-12 desktop:grid-col-3">
+          <h3>{t.phoneLabel}</h3>
+          <p class="margin-top-0"><a href={embassy.phoneHref}>{embassy.phone}</a></p>
+          <h3>{t.faxLabel}</h3>
+          <p class="margin-top-0">{embassy.fax}</p>
+
+          <h3>{t.followLabel}</h3>
+          <ul class="site-social">
+            {embassy.social.map((sl) => (
+              <li>
+                <a class="site-social__link" href={sl.href} rel="noopener">
+                  <span class:list={['site-social__icon', `site-social__icon--${sl.icon}`]} aria-hidden="true"></span>
+                  <span>{sl.label}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
