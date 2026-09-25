@@ -9,11 +9,14 @@
   /* Section bands. The page used to alternate white and a neutral grey (#f0f0f0), which read as
      an absence of colour rather than a choice. These are the same lightness range, pulled toward
      the navy/blue the rest of the site already uses, so the bands belong to the palette.
-     Every pairing below is >= 5.4:1 against body text, links, muted text and the red accent -
-     well clear of the 4.5:1 the accessibility gate requires. */
-  --site-band:      #eef2f7;   /* default alternating band */
-  --site-band-deep: #e1e9f2;   /* one step deeper, so three tones alternate rather than two */
-  --site-band-soft: #f4f7fa;   /* page-heading band on the inner pages */
+     Two tones, not three. An earlier pass used three light tints, and the step between the two
+     lightest was 0.043 in relative luminance - far too small to read as a boundary, so three
+     sections ran together into one slightly uneven surface. These two are 0.182 apart, and the
+     page alternates strictly between them so every section edge is a full step.
+     Both clear 4.5:1 against body text, links, muted text, the navy headings and the red accent;
+     the tightest pairing is the link colour on the darker band at 5.03:1. */
+  --site-band-soft: #f2f6fa;   /* the lighter of the two alternating bands */
+  --site-band-deep: #d5e0ec;   /* the darker one */
   --site-line:      #d3dde8;   /* hairline in the same family, instead of a neutral grey */
 
   /* One elevation for the whole site. Photos, report covers and cards each had their own
@@ -244,14 +247,11 @@ body {
 .site-section {
   padding: 2.5rem 0;
 }
-.site-section--alt {
-  background: var(--site-band);
+.site-section--soft {
+  background: var(--site-band-soft);
 }
 .site-section--deep {
   background: var(--site-band-deep);
-}
-.site-section--soft {
-  background: var(--site-band-soft);
 }
 /* Short navy rule above each section heading: marks where a section starts without needing
    a full-width divider, and gives the headings the same accent the header already uses. */
@@ -322,7 +322,7 @@ body {
 
 /* Footer */
 .site-footer {
-  background: var(--site-band);
+  background: var(--site-band-deep);
   border-top: 4px solid var(--site-navy);
 }
 .site-footer__links li {
