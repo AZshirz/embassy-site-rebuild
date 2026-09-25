@@ -23,7 +23,7 @@ const t = citizens[lang];
       <h2 id={s.id}>{s.title}</h2>
       {s.id === 'emergency' && <EmergencyBox lang={lang} headingLevel="h3" id="acs-emergency-heading" />}
       {s.intro && <p>{s.intro}</p>}
-      <CardGrid cards={s.cards} cols={2} />
+      <CardGrid cards={s.cards} lang={lang} cols={2} />
     </>
   ))}
 </ContentPage>

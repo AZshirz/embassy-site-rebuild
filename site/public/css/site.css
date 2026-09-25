@@ -164,6 +164,56 @@ body {
   box-shadow: var(--site-shadow);
 }
 
+/* Expandable card detail. The browser's own <details>, so it needs no JavaScript and no inline
+   script; the only work here is replacing the default disclosure triangle with a chevron that
+   rotates on open. The summary is padded to stay above the 24px minimum tap target. */
+.site-card__more {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--site-line);
+  padding-top: 0.25rem;
+}
+.site-card__more > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  color: var(--site-blue);
+  font-weight: 700;
+  font-size: 0.95rem;
+  list-style: none;
+}
+.site-card__more > summary::-webkit-details-marker {
+  display: none;
+}
+.site-card__more > summary::before {
+  content: "";
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-bottom: 0.15rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+}
+.site-card__more[open] > summary::before {
+  transform: rotate(-135deg);
+  margin-bottom: -0.15rem;
+}
+.site-card__more > summary:hover {
+  text-decoration: underline;
+}
+.site-card__more > p {
+  margin: 0.4rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-card__more > summary::before {
+    transition: none;
+  }
+}
+
 /* News cards: same elevation and hairline as everything else, so a band of cards does not
    look like a different component library from the photos above it. */
 .site-section .usa-card__container {
@@ -180,6 +230,9 @@ body {
 }
 .site-section--deep {
   background: var(--site-band-deep);
+}
+.site-section--soft {
+  background: var(--site-band-soft);
 }
 /* Short navy rule above each section heading: marks where a section starts without needing
    a full-width divider, and gives the headings the same accent the header already uses. */

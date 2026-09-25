@@ -30,10 +30,10 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section" aria-labelledby="needs-heading">
+  <section class="site-section site-section--soft" aria-labelledby="needs-heading">
     <div class="grid-container">
       <h2 id="needs-heading">{t.needTitle}</h2>
-      <CardGrid cards={t.needs} />
+      <CardGrid cards={t.needs} lang={lang} />
       <h3 class="margin-top-3">{t.moreTitle}</h3>
       <ul class="site-inline-links">
         {t.moreLinks.map((l) => (
@@ -140,7 +140,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
     </div>
   </section>
 
-  <section class="site-section" aria-labelledby="reports-heading">
+  <section class="site-section site-section--soft" aria-labelledby="reports-heading">
     <div class="grid-container">
       <h2 id="reports-heading">{t.reportsTitle}</h2>
       <ul class="site-reports">

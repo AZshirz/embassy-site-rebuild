@@ -14,7 +14,7 @@ const t = education[lang];
     <>
       <h2 id={s.id}>{s.title}</h2>
       {s.intro && <p>{s.intro}</p>}
-      <CardGrid cards={s.cards} cols={2} />
+      <CardGrid cards={s.cards} lang={lang} cols={2} />
     </>
   ))}
 </ContentPage>
