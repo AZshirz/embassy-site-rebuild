@@ -12,9 +12,7 @@ const { lang, title, lead, description, path } = Astro.props as {
 const u = ui[lang];
 ---
 <Base lang={lang} title={title} description={description} path={path}>
-  <div class="grid-container">
-    <PageHeading title={title} lead={lead} />
-  </div>
+  <PageHeading title={title} lead={lead} />
   <div class="grid-container">
     <div class="usa-in-page-nav-container">
       <aside class="usa-in-page-nav"

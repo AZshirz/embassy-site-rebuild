@@ -5,6 +5,21 @@
   --site-navy: #162e51;   /* USWDS "primary-darker" */
   --site-blue: #005ea2;   /* USWDS "primary" */
   --site-red:  #b50909;   /* USWDS "secondary-dark" */
+
+  /* Section bands. The page used to alternate white and a neutral grey (#f0f0f0), which read as
+     an absence of colour rather than a choice. These are the same lightness range, pulled toward
+     the navy/blue the rest of the site already uses, so the bands belong to the palette.
+     Every pairing below is >= 5.4:1 against body text, links, muted text and the red accent -
+     well clear of the 4.5:1 the accessibility gate requires. */
+  --site-band:      #eef2f7;   /* default alternating band */
+  --site-band-deep: #e1e9f2;   /* one step deeper, so three tones alternate rather than two */
+  --site-band-soft: #f4f7fa;   /* page-heading band on the inner pages */
+  --site-line:      #d3dde8;   /* hairline in the same family, instead of a neutral grey */
+
+  /* One elevation for the whole site. Photos, report covers and cards each had their own
+     shadow (or none), which made them look like parts of different designs. Tinted navy rather
+     than black so it sits on the coloured bands without going muddy. */
+  --site-shadow: 0 1px 2px rgba(22, 46, 81, 0.10), 0 4px 12px rgba(22, 46, 81, 0.07);
 }
 
 body {
@@ -146,7 +161,14 @@ body {
 }
 .site-report img {
   flex: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--site-shadow);
+}
+
+/* News cards: same elevation and hairline as everything else, so a band of cards does not
+   look like a different component library from the photos above it. */
+.site-section .usa-card__container {
+  border-color: var(--site-line);
+  box-shadow: var(--site-shadow);
 }
 
 /* Sections */
@@ -154,10 +176,18 @@ body {
   padding: 2.5rem 0;
 }
 .site-section--alt {
-  background: #f0f0f0;
+  background: var(--site-band);
 }
-.site-section h2 {
+.site-section--deep {
+  background: var(--site-band-deep);
+}
+/* Short navy rule above each section heading: marks where a section starts without needing
+   a full-width divider, and gives the headings the same accent the header already uses. */
+.site-section > .grid-container > h2 {
   margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 4px solid var(--site-navy);
+  display: inline-block;
 }
 
 /* Emergency summary box: red accent instead of the default blue */
@@ -208,7 +238,7 @@ body {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--site-shadow);
 }
 .site-leader h3 {
   margin: 0;
@@ -220,15 +250,24 @@ body {
 
 /* Footer */
 .site-footer {
-  background: #f0f0f0;
+  background: var(--site-band);
+  border-top: 4px solid var(--site-navy);
 }
 .site-footer__links li {
   margin-bottom: 0.5rem;
 }
 
-/* Content pages: two-column layout with in-page navigation */
+/* Content pages: two-column layout with in-page navigation.
+   The heading is a full-bleed band (the component carries its own .grid-container), so the
+   inner pages open on colour instead of on white the way the home page opens on the hero. */
 .site-page-heading {
-  padding: 2rem 0 0.5rem;
+  background: var(--site-band-soft);
+  border-bottom: 1px solid var(--site-line);
+  padding: 2.5rem 0 2rem;
+  margin-bottom: 2rem;
+}
+.site-page-heading h1 {
+  color: var(--site-navy);
 }
 .site-content h2 {
   scroll-margin-top: 1rem;

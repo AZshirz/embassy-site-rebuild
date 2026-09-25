@@ -13,8 +13,8 @@ const t = ui[lang].ask;
 const searchHref = ui[lang].search.href;
 ---
 <Base lang={lang} title={t.title} description={t.lead} path="/ask/">
+  <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <PageHeading title={t.title} lead={t.lead} />
 
     <form class="usa-form usa-form--large" id="ask-form" data-api={API_URL} data-lang={lang}
       data-thinking={t.thinking} data-sources={t.sources} data-grounded={t.grounded} data-not-grounded={t.notGrounded}
