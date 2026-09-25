@@ -1,6 +1,6 @@
 ---
 import type { Lang } from '../data/content';
-import { ui, home, embassy } from '../data/content';
+import { ui, home, embassy, hoursAttr } from '../data/content';
 import Base from '../layouts/Base.astro';
 import CardGrid from './CardGrid.astro';
 import LeaderList from './LeaderList.astro';
@@ -9,8 +9,6 @@ const { lang } = Astro.props as { lang: Lang };
 const t = home[lang];
 const u = ui[lang];
 
-// Opening hours as "HH:MM-HH:MM" or "closed", Monday first, for the live status badge.
-const hoursAttr = embassy.hours.map((h) => (h ? `${h.open}-${h.close}` : 'closed')).join(',');
 const mapHref = `https://www.openstreetmap.org/?mlat=${embassy.geo.lat}&mlon=${embassy.geo.lng}#map=17/${embassy.geo.lat}/${embassy.geo.lng}`;
 
 const hero = embassy.photos.hero;

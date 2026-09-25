@@ -351,6 +351,16 @@ body {
   box-shadow: var(--site-shadow);
 }
 
+/* Let a short last row fill the width instead of stranding a card.
+   USWDS sizes cards with fixed column widths, so a three-card section in a two-column grid left
+   the third card marooned beside an empty half-row - six of them across the site, plus the
+   single-card "Exchange alumni" section sitting at half width with nothing next to it.
+   flex-grow lets the cards on an incomplete row expand to take the space; full rows are
+   unaffected, because they have none to take. */
+.usa-card-group > .usa-card {
+  flex-grow: 1;
+}
+
 /* Sections */
 .site-section {
   padding: 2.5rem 0;
@@ -399,6 +409,21 @@ body {
   font-weight: 700;
   font-size: 0.9rem;
 }
+/* The header copy of the badge. It sits in the navbar rather than the secondary nav, because
+   the secondary nav collapses behind the menu button on a phone - and "is the embassy open right
+   now?" is exactly the question someone asks on a phone. */
+.site-hours-status--header {
+  font-size: 0.78rem;
+  padding: 0.1rem 0.6rem;
+  white-space: nowrap;
+}
+.site-header .usa-logo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+
 .site-hours-status--open {
   background: #ecf3ec;
   color: #216e1f;   /* USWDS success-darker: 5.6:1 on this background (WCAG AA needs 4.5:1) */
