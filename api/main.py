@@ -132,13 +132,32 @@ def root():
             "endpoints": ["/health", "/alerts", "/alerts/all", "/search?q=", "POST /feedback"]}
 
 
+# TEMPORARY measurement for the rate limiter. Every value is a count or a yes/no - never an address.
+# Sent from outside with known X-Forwarded-For / CloudFront-Viewer-Address values, these show what
+# each platform does to those headers on the way in, which decides which address can be trusted.
+_DOCUMENTATION_RANGES = ("192.0.2.", "198.51.100.", "203.0.113.")   # RFC 5737: never a real client
+
+
+def proxy_probe(request: Request) -> dict:
+    chain = forwarded_chain(request)
+    last = chain[-1] if chain else ""
+    peer = request.client.host if request.client else ""
+    viewer = request.headers.get("cloudfront-viewer-address", "")
+    viewer_ip = viewer.rsplit(":", 1)[0] if viewer else ""
+    return {
+        "forwarded_for_entries": len(chain),
+        "forwarded_last_is_socket_peer": bool(last) and last == peer,
+        "forwarded_last_is_documentation_address": last.startswith(_DOCUMENTATION_RANGES),
+        "viewer_address_present": bool(viewer),
+        "viewer_address_is_documentation_address": viewer_ip.startswith(_DOCUMENTATION_RANGES),
+        "forwarded_last_equals_viewer_address": bool(last) and last == viewer_ip,
+    }
+
+
 @app.get("/health", tags=["meta"])
 def health(request: Request):
-    # forwarded_for_entries is TEMPORARY: how many X-Forwarded-For entries reached the app. Sending a
-    # request with a known number of entries and reading this back measures how many our platform
-    # appends, which is what TRUSTED_PROXY_HOPS must be set to. A count only - never an address.
     return {"status": "ok", "uptime_seconds": round(time.time() - STARTED), "feed_cached": feed_cache.fresh(),
-            "search_index_cached": index_cache.fresh(), "forwarded_for_entries": len(forwarded_chain(request))}
+            "search_index_cached": index_cache.fresh(), "proxy_probe": proxy_probe(request)}
 
 
 # ---------- alerts ----------
