@@ -137,6 +137,10 @@ Resources:
           # no network call to the site and no knowledge of the site's URL.
           SEARCH_INDEX_FILE: search-index.json
           PYTHONUNBUFFERED: "1"
+          # Swagger UI at /docs cannot work behind this distribution: it loads its script from a CDN
+          # the CSP forbids and asks for /openapi.json at the domain root, which goes to S3. The
+          # schema is still served, at /api/openapi.json.
+          API_DOCS: "off"
 
   ApiFunctionUrl:
     Type: AWS::Lambda::Url
@@ -252,6 +256,18 @@ Resources:
         # Cheapest edge footprint. CloudFront's free tier covers this regardless, but there is
         # no reason to pay for edge locations a portfolio site will never need.
         PriceClass: PriceClass_100
+        # S3 answers a request for a missing object with 403, not 404 - the bucket is private and
+        # CloudFront is not allowed to list it - so a mistyped URL used to show raw "AccessDenied"
+        # XML. Serve the site's own 404 page with a real 404 status instead.
+        # Only 403 is mapped, and that is deliberate: error pages apply to every behaviour,
+        # including /api/*, and the API raises 404s of its own (an unknown country on /alerts) that
+        # must reach the caller as JSON. The API never raises a 403, so mapping 403 alone catches
+        # S3's missing objects and nothing of the API's.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 10
         Origins:
           - Id: site-s3
             DomainName: !GetAtt SiteBucket.RegionalDomainName

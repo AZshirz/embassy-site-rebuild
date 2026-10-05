@@ -242,6 +242,18 @@ jobs:
             echo "  FAIL  no Content-Security-Policy header"; fail=1
           fi
 
+          # A missing page must be the site's own 404 page with a real 404 status. S3 answers a
+          # missing object with a 403 and an "AccessDenied" XML body; CloudFront's error mapping in
+          # stack.yml is what turns that into the 404 page.
+          NF_CODE=$(curl -s -o /tmp/notfound -w '%{http_code}' "$URL/no-such-page/")
+          if [ "$NF_CODE" != "404" ] || ! grep -q "<html" /tmp/notfound; then
+            echo "  FAIL  a missing page returned HTTP $NF_CODE, not the site's 404 page"; fail=1
+          fi
+          # The API's own 404s must still be JSON: the mapping above is only for 403.
+          if ! curl -s "$URL/api/alerts?country=Narnia" | grep -q '"detail"'; then
+            echo "  FAIL  the API's 404 for an unknown country is no longer JSON"; fail=1
+          fi
+
           # The stylesheet is NOT fingerprinted, so it must never come back immutable: such a
           # copy outlives every future deploy in a visitor's browser and no invalidation can
           # reach it. This shipped once and showed as a site stuck on its previous design.
