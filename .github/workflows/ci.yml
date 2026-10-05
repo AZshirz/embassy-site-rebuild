@@ -13,6 +13,9 @@ on:
   push:
     branches: [main, "design/**", "fix/**"]
   pull_request:
+  # Started explicitly by alerts.yml on its side branch: pushes made with a workflow's own token
+  # trigger nothing, so this is how the daily advisory update gets tested before reaching main.
+  workflow_dispatch:
   workflow_call:
     inputs:
       public_api_url:
