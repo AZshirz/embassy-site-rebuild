@@ -110,9 +110,9 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
         <div class="tablet:grid-col-6 desktop:grid-col-4">
           <h3>
             {u.hours.title}
-            <span class="site-hours-status margin-left-1" hidden
+            <span class="site-hours-status margin-left-1" data-pending
               data-hours-status data-hours={hoursAttr} data-timezone={embassy.timezone}
-              data-open-label={u.hours.openNow} data-closed-label={u.hours.closedNow}></span>
+              data-open-label={u.hours.openNow} data-closed-label={u.hours.closedNow}>{u.hours.closedNow}</span>
           </h3>
           <table class="usa-table usa-table--borderless site-hours">
             <caption class="usa-sr-only">{u.hours.title}</caption>

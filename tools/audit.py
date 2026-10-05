@@ -142,6 +142,13 @@ def audit_html(page: str, version: str, html_path: Path, asset_bytes: int, asset
     )
 
 
+def every_built_page() -> list[Path]:
+    """Every HTML page the build produced. The gate used to check only the four English pages that
+    have an original to compare against, so the Azerbaijani pages, Search, Ask, Feedback and the 404
+    page were never checked at all. Vendored USWDS files are not pages and are skipped."""
+    return sorted(p for p in DIST_DIR.rglob("*.html") if "uswds" not in p.relative_to(DIST_DIR).parts)
+
+
 def find_source(prefix: str) -> Path:
     matches = sorted(SOURCE_DIR.glob(f"{prefix}*.html"))
     if not matches:
@@ -205,14 +212,19 @@ def main() -> None:
     print("\n".join(lines))
 
     if "--gate" in sys.argv:
-        failures = gate(results)
+        # The comparison report covers the four pages with originals; the gate covers every page.
+        compared = {(DIST_DIR / rel).resolve() for _, _, rel in PAGE_MAP}
+        others = [audit_html("/" + p.relative_to(DIST_DIR).as_posix().removesuffix("index.html"), "rebuild", p, 0, 0)
+                  for p in every_built_page() if p.resolve() not in compared]
+        gated = [r for r in results if r.version == "rebuild"] + others
+        failures = gate(gated)
         if failures:
             print("\nACCESSIBILITY GATE FAILED:")
             for f in failures:
                 print("  -", f)
             sys.exit(1)
-        print("\nAccessibility gate passed: every rebuilt page has one h1, no empty/skipped headings, "
-              "no images without alt, no duplicated content, no inline scripts.")
+        print(f"\nAccessibility gate passed on all {len(gated)} built pages: one h1 each, no empty/skipped "
+              "headings, no images without alt, no duplicated content, no inline scripts.")
 
 
 def gate(results: list[PageAudit]) -> list[str]:

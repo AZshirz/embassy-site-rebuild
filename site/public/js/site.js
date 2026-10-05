@@ -20,7 +20,7 @@
     dayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(get('weekday'));
     nowMinutes = parseInt(get('hour'), 10) % 24 * 60 + parseInt(get('minute'), 10);
   } catch (e) {
-    return;   // Older browsers without Intl time-zone support: leave every badge hidden.
+    return;   // Older browsers without Intl time-zone support: leave every badge invisible.
   }
 
   Array.prototype.forEach.call(badges, function (badge) {
@@ -37,6 +37,6 @@
 
     badge.textContent = isOpen ? badge.getAttribute('data-open-label') : badge.getAttribute('data-closed-label');
     badge.classList.add(isOpen ? 'site-hours-status--open' : 'site-hours-status--closed');
-    badge.hidden = false;
+    badge.removeAttribute('data-pending');   // its space was reserved from the start, so nothing moves
   });
 })();

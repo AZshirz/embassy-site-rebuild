@@ -7,6 +7,7 @@ const { lang, currentPath } = Astro.props as { lang: Lang; currentPath: string }
 const t = ui[lang];
 const otherLang: Lang = lang === 'en' ? 'az' : 'en';
 const isCurrent = (href: string) => href === currentPath;
+const longerLabel = [t.hours.openNow, t.hours.closedNow].sort((a, b) => b.length - a.length)[0];
 ---
 <header class="usa-header usa-header--basic site-header">
   <div class="usa-nav-container">
@@ -18,11 +19,15 @@ const isCurrent = (href: string) => href === currentPath;
             {t.siteName}
           </a>
         </em>
-        <!-- Filled in by public/js/site.js from the data attributes, in Baku local time. Starts
-             hidden so it never shows a stale or wrong state when scripting is unavailable. -->
-        <span class="site-hours-status site-hours-status--header" hidden
+        <!-- Filled in by public/js/site.js, in Baku local time. It starts INVISIBLE but holding its
+             space (data-pending, the longer label as placeholder) rather than display:none: on a
+             desktop the badge sits on its own line under the name, so inserting it after load pushed
+             the whole page down 13px - desktop CLS up to 0.13, found when the gates were widened on
+             2026-10-04. Invisible content is also hidden from screen readers, so no stale or wrong
+             state is ever shown or announced when scripting is unavailable. -->
+        <span class="site-hours-status site-hours-status--header" data-pending
           data-hours-status data-hours={hoursAttr} data-timezone={embassy.timezone}
-          data-open-label={t.hours.openNow} data-closed-label={t.hours.closedNow}></span>
+          data-open-label={t.hours.openNow} data-closed-label={t.hours.closedNow}>{longerLabel}</span>
       </div>
       <button type="button" class="usa-menu-btn">{t.menu}</button>
     </div>
