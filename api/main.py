@@ -37,7 +37,31 @@ import ask as ask_module
 # ---------- configuration (environment variables, with sensible defaults) ----------
 
 SITE_URL = os.environ.get("SITE_URL", "https://embassy-site-rebuild.ashirz.workers.dev").rstrip("/")
-ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", f"{SITE_URL},http://localhost:4321").split(",") if o.strip()]
+# Running on Cloud Run or Lambda? Each sets a variable no laptop has, which keeps developer
+# conveniences out of production without anyone having to remember a console setting.
+ON_CLOUD = bool(os.environ.get("K_SERVICE") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+
+def default_origins(site_url: str, on_cloud: bool) -> str:
+    """CORS origins when ALLOWED_ORIGINS is unset: the site itself, plus the Astro dev server only
+    on a developer's machine. The old default allowed http://localhost:4321 everywhere, and since
+    ALLOWED_ORIGINS was never set on Cloud Run, production really did accept it (seen 2026-10-04)."""
+    return site_url if on_cloud else f"{site_url},http://localhost:4321"
+
+
+ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", default_origins(SITE_URL, ON_CLOUD)).split(",") if o.strip()]
+# How many X-Forwarded-For entries OUR infrastructure appends in front of this app (Cloud Run's front
+# end, or CloudFront + the Lambda URL service). Every proxy appends the address it received the
+# request from, so whatever a client typed comes first and what our platform added comes last.
+# Unset means the original behaviour - trust the first entry - kept only until each platform's real
+# count has been measured; see client_ip_of().
+_HOPS = os.environ.get("TRUSTED_PROXY_HOPS", "").strip()
+TRUSTED_PROXY_HOPS: int | None = int(_HOPS) if _HOPS else None
+# Interactive docs at /docs and /redoc. Turned off behind CloudFront: Swagger UI loads its script from
+# a CDN, which the site's Content-Security-Policy forbids, and requests /openapi.json at the domain
+# root, which CloudFront sends to S3 - so on AWS the page loaded blank (seen 2026-10-04). The schema
+# itself stays published at /openapi.json (/api/openapi.json through CloudFront).
+API_DOCS = os.environ.get("API_DOCS", "on").strip().lower() != "off"
 FEED_CACHE_SECONDS = int(os.environ.get("FEED_CACHE_SECONDS", "3600"))
 SEARCH_CACHE_SECONDS = int(os.environ.get("SEARCH_CACHE_SECONDS", "900"))
 FEEDBACK_LIMIT_PER_HOUR = int(os.environ.get("FEEDBACK_LIMIT_PER_HOUR", "5"))
@@ -52,6 +76,8 @@ app = FastAPI(
     title="Embassy Site Rebuild API",
     version="0.2.0",
     description="Backend for the U.S. Embassy in Azerbaijan site rebuild (portfolio project, unofficial).",
+    docs_url="/docs" if API_DOCS else None,
+    redoc_url="/redoc" if API_DOCS else None,
 )
 app.add_middleware(
     CORSMiddleware,
@@ -102,14 +128,17 @@ index_cache = Cached(SEARCH_CACHE_SECONDS)
 
 @app.get("/", tags=["meta"])
 def root():
-    return {"service": app.title, "version": app.version, "docs": "/docs",
+    return {"service": app.title, "version": app.version, "docs": "/docs" if API_DOCS else "/openapi.json",
             "endpoints": ["/health", "/alerts", "/alerts/all", "/search?q=", "POST /feedback"]}
 
 
 @app.get("/health", tags=["meta"])
-def health():
+def health(request: Request):
+    # forwarded_for_entries is TEMPORARY: how many X-Forwarded-For entries reached the app. Sending a
+    # request with a known number of entries and reading this back measures how many our platform
+    # appends, which is what TRUSTED_PROXY_HOPS must be set to. A count only - never an address.
     return {"status": "ok", "uptime_seconds": round(time.time() - STARTED), "feed_cached": feed_cache.fresh(),
-            "search_index_cached": index_cache.fresh()}
+            "search_index_cached": index_cache.fresh(), "forwarded_for_entries": len(forwarded_chain(request))}
 
 
 # ---------- alerts ----------
@@ -236,8 +265,26 @@ _feedback_hits: dict[str, deque] = defaultdict(deque)
 _ask_hits: dict[str, deque] = defaultdict(deque)
 
 
+def forwarded_chain(request: Request) -> list[str]:
+    """The X-Forwarded-For entries, left (what the client sent) to right (what our proxies added)."""
+    return [part.strip() for part in request.headers.get("x-forwarded-for", "").split(",") if part.strip()]
+
+
 def client_ip_of(request: Request) -> str:
-    return request.headers.get("x-forwarded-for", request.client.host if request.client else "?").split(",")[0].strip()
+    """The address the rate limiter counts against.
+
+    The original took the FIRST X-Forwarded-For entry. That is whatever the client chose to send, so
+    a script could claim a new address on every request and never be limited (shown 2026-10-04:
+    six forged posts in a row, six accepted). Our own proxies append to the END, so counting
+    TRUSTED_PROXY_HOPS in from the right lands on the address our platform actually saw.
+    With no proxy in front (TRUSTED_PROXY_HOPS = 0, or running locally) the socket peer is the client."""
+    chain = forwarded_chain(request)
+    peer = request.client.host if request.client else "?"
+    if TRUSTED_PROXY_HOPS is None:                       # legacy behaviour, until measured
+        return chain[0] if chain else peer
+    if TRUSTED_PROXY_HOPS > 0 and len(chain) >= TRUSTED_PROXY_HOPS:
+        return chain[-TRUSTED_PROXY_HOPS]
+    return peer
 
 
 def rate_limited(client_ip: str, hits_by_ip: dict[str, deque] = _feedback_hits, limit: int = FEEDBACK_LIMIT_PER_HOUR) -> bool:

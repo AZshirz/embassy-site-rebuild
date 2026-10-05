@@ -141,6 +141,42 @@ def test_feedback_rate_limit():
     assert client.post("/feedback", json={"page": "/", "rating": 5}).status_code == 429
 
 
+def _request_with_forwarded_for(chain: str):
+    from starlette.requests import Request
+    return Request({"type": "http", "headers": [(b"x-forwarded-for", chain.encode())], "client": ("127.0.0.1", 1)})
+
+
+def test_rate_limit_ignores_a_forged_first_hop(monkeypatch):
+    """The 2026-10-04 bypass: a client writing a new first X-Forwarded-For entry on every request
+    was never limited. Behind one proxy that appends the real address, it must be."""
+    monkeypatch.setattr(main, "TRUSTED_PROXY_HOPS", 1)
+    body = {"page": "/", "rating": 5}
+    for i in range(main.FEEDBACK_LIMIT_PER_HOUR):
+        forged = {"X-Forwarded-For": f"10.0.0.{i}, 203.0.113.7"}
+        assert client.post("/feedback", json=body, headers=forged).status_code == 201
+    assert client.post("/feedback", json=body, headers={"X-Forwarded-For": "10.9.9.9, 203.0.113.7"}).status_code == 429
+
+
+def test_rate_limit_still_keeps_real_clients_apart(monkeypatch):
+    monkeypatch.setattr(main, "TRUSTED_PROXY_HOPS", 1)
+    for address in ("203.0.113.7", "198.51.100.9"):
+        for _ in range(main.FEEDBACK_LIMIT_PER_HOUR):
+            r = client.post("/feedback", json={"page": "/", "rating": 5}, headers={"X-Forwarded-For": address})
+            assert r.status_code == 201
+
+
+def test_client_address_is_counted_from_the_right(monkeypatch):
+    monkeypatch.setattr(main, "TRUSTED_PROXY_HOPS", 2)       # e.g. CloudFront, then the Lambda URL service
+    assert main.client_ip_of(_request_with_forwarded_for("6.6.6.6, 203.0.113.7, 130.176.0.1")) == "203.0.113.7"
+    monkeypatch.setattr(main, "TRUSTED_PROXY_HOPS", 0)       # nothing in front: the socket peer is the client
+    assert main.client_ip_of(_request_with_forwarded_for("6.6.6.6")) == "127.0.0.1"
+
+
+def test_production_cors_does_not_include_the_dev_server():
+    assert main.default_origins("https://site.example", on_cloud=True) == "https://site.example"
+    assert "http://localhost:4321" in main.default_origins("https://site.example", on_cloud=False)
+
+
 # ---------- headers and request hygiene ----------
 
 def test_security_headers_present():
