@@ -24,7 +24,12 @@ whether the API origin is absolute or relative:
 - `site/src/data/api.ts`
 - `site/src/layouts/Base.astro`  ← the layout, so it is the file a redesign most wants to touch
 
-Everything else in `site/` is byte-identical. **Do UI work once, on `main`, then merge into `aws`.**
+Everything else in `site/` is byte-identical.
+
+**One canonical address for both deployments (owner's decision, 2026-10-04).** Every page's canonical,
+hreflang, `og:url` and `og:image` point at the Cloudflare origin (`Astro.site`), on AWS too. That is
+deliberate: identical content at two addresses should name one original, so search engines do not treat
+the copies as competing duplicates. Do not give AWS its own canonical. **Do UI work once, on `main`, then merge into `aws`.**
 Never edit the same UI file separately on both branches.
 
 `Base.astro` conflicts only when an edit lands next to its import of `API_ORIGIN` /
@@ -164,7 +169,9 @@ live sites in a real browser that has visited them before.** The gates cannot do
   `API container boots (what Cloud Run runs)`). Per GitHub's docs, once those checks have passed on
   a commit it can be pushed directly to the protected branch - so the workflow is: push to a
   `design/**` or `fix/**` branch, wait for CI, then fast-forward `main` to that same commit. A commit
-  CI has not passed is refused.
+  CI has not passed is refused. Created and verified 2026-10-04: an untested push was declined with
+  "3 of 3 required status checks are expected". The bypass list is empty on purpose - Claude pushes
+  with the owner's credentials, so an owner bypass would exempt Claude too.
 
 ### The rule that closes the `main` gap
 
@@ -220,6 +227,11 @@ money is to make the pages call the API far more often, and even then the free a
 orders of magnitude away. The real $0 risk is the **AWS Free Plan account expiry** (6 months,
 then AWS deletes resources) — see `aws/README.md`.
 
+**Least privilege on both clouds.** Cloud Run runs as `embassy-api-runtime@embassy-site-rebuild.iam.gserviceaccount.com`,
+which has **no roles** (since 2026-10-04; it used the default compute account before). The Lambda's
+role can only write its own logs. Neither API calls any cloud service, so do not grant either one
+anything - logs reach Cloud Logging and CloudWatch without it.
+
 **GCP has no spending cap any more.** On 2026-10-04 every Cloud Run route returned 503 in ~85 ms -
 the front end refusing, not a cold start - until the owner removed a GCP spending limit. The site
 itself kept working, which is the design: search and Ask showed "temporarily unavailable" while the
@@ -234,9 +246,14 @@ Author every commit as `Adam Shirzadian <330568160+AZshirz@users.noreply.github.
 Do **not** add `Co-Authored-By: Claude` trailers. Every commit on both remote branches uses this
 single identity; the GitHub contributors API reports exactly one contributor.
 
-`INTERVIEW_PREP.md` and `STUDY_GUIDE.md` at the repo root are the owner's private interview notes.
-They are ignored through `.git/info/exclude` (local only, deliberately not `.gitignore`) so that
+`INTERVIEW_PREP.md`, `STUDY_GUIDE.md` and `OWNER_ACTIONS.md` at the repo root are the owner's private
+notes. They are ignored through `.git/info/exclude` (local only, deliberately not `.gitignore`) so that
 `git add -A` cannot publish them. Never commit them, and never move them into a tracked path.
+
+**Keep `OWNER_ACTIONS.md` current.** Whenever the owner does something by hand - a console or dashboard
+change, a setting, a verification, a bug they spot - add a row (when, what, where, effect, how verified)
+and tick off its "Still to do by hand" list. It is the record of their own contribution, as opposed to
+the code Claude writes.
 
 `.github/workflows/alerts.yml` also commits under this identity rather than `github-actions[bot]`,
 so the daily advisory job can never become a second contributor.
