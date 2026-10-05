@@ -1,21 +1,42 @@
 # Daily check of the State Department travel-advisory feed.
 #
-# What it does: runs tools/fetch_alerts.py. If Azerbaijan's advisory level or date changed,
-# it commits the update to alerts.json (site copy + API fallback copy) as the repository owner and pushes.
-# That push triggers the normal Cloudflare build, so the live site's alert strip updates itself.
+# What it does: runs tools/fetch_alerts.py. If Azerbaijan's advisory level or date changed, it
+# commits the update to alerts.json (site copy + API fallback copy) and publishes it to `main`,
+# which redeploys the site, so the live alert strip updates itself.
 #
-# What it does NOT do: commit anything when nothing changed (most days). The only trace of a
-# quiet run is this workflow's log, which GitHub deletes after 90 days.
+# Why publishing takes three steps: `main` is protected by a ruleset that accepts only commits on
+# which CI has already passed, and GitHub Actions cannot be put on a ruleset's bypass list. Pushes
+# made with this workflow's own token also start no other workflows, so CI would never run on the
+# bot's commit by itself. So the job pushes the commit to a side branch, starts CI there explicitly
+# (workflow_dispatch is the one kind of event that token is allowed to trigger), waits for it, and
+# only then pushes that same tested commit to `main`. If CI fails, main is untouched and this run is
+# red, which emails the owner.
+#
+# What it does NOT do: commit anything when nothing changed (most days). The only trace of a quiet
+# run is this workflow's log, which GitHub deletes after 90 days.
+#
+# "Run workflow" with "rehearse" ticked walks the whole publish path - side branch, CI, wait - and
+# stops before main, so the mechanism can be proven without waiting for the advisory to change.
 
 name: Update travel advisory
 
 on:
   schedule:
     - cron: "17 6 * * *"     # 06:17 UTC daily (an odd minute avoids the top-of-the-hour rush)
-  workflow_dispatch:         # "Run workflow" button in the Actions tab, for manual checks
+  workflow_dispatch:         # "Run workflow" button in the Actions tab
+    inputs:
+      rehearse:
+        description: "Rehearse the publish path (side branch, CI, wait) without changing main"
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: write    # push the update
+  actions: write     # start CI on the side branch and read its result
+
+concurrency:
+  group: advisory-update
+  cancel-in-progress: false
 
 jobs:
   check-feed:
@@ -30,19 +51,64 @@ jobs:
       - name: Read the feed and update alerts.json if needed
         run: python tools/fetch_alerts.py
 
-      - name: Commit and push only if the file changed
+      - name: Commit, prove it on a side branch, then publish to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REHEARSE: ${{ inputs.rehearse }}
         run: |
+          set -euo pipefail
+
           if git diff --quiet -- site/src/data/alerts.json api/data/alerts.json; then
-            echo "No change to alerts.json; nothing to commit."
+            if [ "$REHEARSE" != "true" ]; then
+              echo "No change to alerts.json; nothing to commit."
+              exit 0
+            fi
+            echo "Rehearsal with no real change: CI will run on main's current commit; nothing is published."
+          else
+            LEVEL=$(python -c "import json; print(json.load(open('site/src/data/alerts.json'))['advisory']['level'])")
+            DATE=$(python -c "import json; print(json.load(open('site/src/data/alerts.json'))['advisory']['published'])")
+            # Commit as the repository owner, not as github-actions[bot]. A bot author would show up
+            # permanently in GitHub's contributor list the first day the advisory changes, and this
+            # project is deliberately single-author.
+            git config user.name "Adam Shirzadian"
+            git config user.email "330568160+AZshirz@users.noreply.github.com"
+            git add site/src/data/alerts.json api/data/alerts.json
+            git commit -m "chore(alerts): Azerbaijan travel advisory is Level ${LEVEL} (travel.state.gov, ${DATE})"
+          fi
+
+          SHA=$(git rev-parse HEAD)
+          BRANCH="advisory/update-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/${BRANCH}"
+          cleanup() { git push origin --delete "${BRANCH}" >/dev/null 2>&1 || true; }
+
+          # That push starts no workflow on its own (it was made with this run's token), so start CI.
+          gh workflow run ci.yml --ref "${BRANCH}"
+          RUN_ID=""
+          for attempt in $(seq 1 30); do
+            RUN_ID=$(gh run list --workflow ci.yml --branch "${BRANCH}" --event workflow_dispatch \
+                       --json databaseId,headSha --jq ".[] | select(.headSha == \"${SHA}\") | .databaseId" | head -n 1)
+            [ -n "${RUN_ID}" ] && break
+            sleep 10
+          done
+          if [ -z "${RUN_ID}" ]; then
+            echo "CI never started on ${BRANCH}; main is unchanged."
+            cleanup
+            exit 1
+          fi
+
+          echo "Waiting for CI run ${RUN_ID} on ${SHA}"
+          if ! gh run watch "${RUN_ID}" --exit-status --interval 30; then
+            echo "CI failed on the advisory update; main is unchanged. See run ${RUN_ID}."
+            cleanup
+            exit 1
+          fi
+          cleanup     # the passed checks stay attached to the commit, not to the branch
+
+          if [ "$REHEARSE" = "true" ]; then
+            echo "Rehearsal passed: side branch, CI and wait all work. Nothing was published."
             exit 0
           fi
-          LEVEL=$(python -c "import json; print(json.load(open('site/src/data/alerts.json'))['advisory']['level'])")
-          DATE=$(python -c "import json; print(json.load(open('site/src/data/alerts.json'))['advisory']['published'])")
-          # Commit as the repository owner, not as github-actions[bot]. A bot author would show up
-          # permanently in GitHub's contributor list the first day the advisory changes, and this
-          # project is deliberately single-author.
-          git config user.name "Adam Shirzadian"
-          git config user.email "330568160+AZshirz@users.noreply.github.com"
-          git add site/src/data/alerts.json api/data/alerts.json
-          git commit -m "chore(alerts): Azerbaijan travel advisory is Level ${LEVEL} (travel.state.gov, ${DATE})"
-          git push
+
+          # CI has passed on this exact commit, so the ruleset on main accepts it.
+          git push origin "HEAD:main"
+          echo "Published ${SHA} to main."

@@ -54,12 +54,25 @@ Consequences for design work:
 
 ## The gates that must keep passing
 
-`tools/audit.py --gate` — every rebuilt page must have:
-exactly one `<h1>`, no empty headings, no heading-level skips, no `<img>` without `alt`,
-zero duplicated text blocks, zero inline scripts, plus `lang`, a skip link and `<main>`.
+`tools/audit.py --gate` — **every page the build produces** (15, including `/az/*`, Search, Ask,
+Feedback and the 404 page) must have: exactly one `<h1>`, no empty headings, no heading-level skips,
+no `<img>` without `alt`, zero duplicated text blocks, zero inline scripts, plus `lang`, a skip link
+and `<main>`. (Until 2026-10-04 it checked only the four English pages that have an original.)
 
-`tools/lighthouse-gate.mjs` — accessibility **100**, best-practices ≥ 90, SEO ≥ 90.
-Performance is deliberately not gated (it varies with the runner).
+`tools/lighthouse-gate.mjs` — accessibility **100**, best-practices ≥ 90, SEO ≥ 90, and with
+`--max-cls` a layout-shift budget. CI runs it twice:
+- **desktop, all 14 indexable pages,** CLS ≤ 0.1;
+- **`--mobile`, three pages, with real (devtools) network throttling,** CLS ≤ 0.1. The default
+  simulated throttling replays a fast local load in which fonts arrive instantly, so font reflow
+  can never show up without this.
+
+The 404 page is not in the Lighthouse list: it is `noindex`, so it correctly fails SEO (63).
+Performance is deliberately not gated (it varies with the runner). The site job takes about 5 minutes.
+
+**Content revealed by JavaScript must hold its space from the first paint.** Use an invisible
+placeholder (`visibility: hidden`, see `.site-hours-status[data-pending]`), never `hidden` /
+`display: none` followed by a reveal. The header badge did the latter and pushed every page down
+13px on desktop (CLS 0.13), unseen until the gate was widened.
 
 Two design patterns these rules quietly forbid:
 - **Cloned carousel slides / duplicated desktop+mobile markup** → fails `duplicate_text_blocks`.
@@ -126,8 +139,8 @@ Both gates passed continuously through three real defects that reached productio
 - **Anything cache-related.** Automated checks drive a fresh headless browser with an empty cache,
   so they fetch what was just deployed by definition. The stale-stylesheet bug was invisible to
   every check and obvious to anyone who had visited the site before.
-- **Mobile layout shift.** CI runs Lighthouse with the desktop preset and does not gate
-  performance, so mobile CLS crept from 0 (Phase 1) to 0.13-0.25 unseen: the first screen painted
+- **Mobile layout shift** (now gated, see above). CI used to run Lighthouse with the desktop preset
+  only and did not gate layout shift, so mobile CLS crept from 0 (Phase 1) to 0.13-0.25 unseen: the first screen painted
   in fallback fonts and reflowed when USWDS's arrived. Fixed with font preloads in `Base.astro`.
   Their URLs must stay exactly the ones the USWDS stylesheet requests - no `v()` - or each font
   downloads twice. To measure CLS locally, use `--throttling-method=devtools`; on localhost fonts
@@ -142,17 +155,29 @@ live sites in a real browser that has visited them before.** The gates cannot do
 
 ## Deploy paths differ in safety — know which branch you are on
 
-- `aws`: `deploy-aws.yml` runs the HTML audit gate **before** deploying and a smoke test after.
-  It does **not** run Lighthouse or the API tests, so a contrast or API regression would still
-  deploy. Safer than `main`, not safe.
-- `main`: Cloudflare Workers Builds deploys on push, **independently of `ci.yml`**. A red CI does
-  *not* block it. A bad commit pushed straight to `main` goes live. Work on a branch and merge.
+- `aws`: `deploy-aws.yml` calls the **whole of `ci.yml`** as a reusable workflow, against the same
+  `/api` build it ships, and the deploy job `needs:` it. Nothing reaches AWS unless every check
+  passes; the smoke test then checks the live result.
+- `main`: Cloudflare Workers Builds and Cloud Run deploy on push, **independently of `ci.yml`**.
+  What stops an untested commit reaching them is a **GitHub ruleset on `main`** requiring the three
+  CI checks (`Build site + accessibility gate`, `API tests`,
+  `API container boots (what Cloud Run runs)`). Per GitHub's docs, once those checks have passed on
+  a commit it can be pushed directly to the protected branch - so the workflow is: push to a
+  `design/**` or `fix/**` branch, wait for CI, then fast-forward `main` to that same commit. A commit
+  CI has not passed is refused.
 
 ### The rule that closes the `main` gap
 
-**Never push UI work straight to `main`.** Work on a `design/*` branch, let `ci.yml` run there,
-compare screenshots (below), then merge. This is process, not infrastructure, and it is the
-agreed approach — do not wire Cloudflare deployment into GitHub Actions without asking.
+**Never push work straight to `main`.** Work on a `design/**` or `fix/**` branch, let `ci.yml` run
+there, compare screenshots (below), then fast-forward `main`. The ruleset enforces it; it used to be
+a habit only. Do not wire Cloudflare deployment into GitHub Actions without asking.
+
+**The daily `alerts.yml` job cannot bypass the ruleset** - GitHub Actions is not an allowed bypass
+actor - and pushes made with a workflow's own token trigger no other workflows, so CI would never
+run on its commit. It therefore pushes the update to `advisory/update-<run id>`, starts CI there
+with `workflow_dispatch` (the one event that token can trigger), waits, and only then pushes the
+same tested commit to `main`. Run it by hand with **rehearse** ticked to prove the path without
+changing anything.
 
 ### Cloudflare Workers Builds configuration (as of 2026-09-24)
 

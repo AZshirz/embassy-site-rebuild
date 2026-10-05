@@ -426,6 +426,11 @@ body {
   gap: 0.35rem 0.75rem;
 }
 
+/* Reserved but invisible until site.js fills it in (see Header.astro): holds the badge's space so
+   revealing it moves nothing, and keeps the placeholder away from screen readers. */
+.site-hours-status[data-pending] {
+  visibility: hidden;
+}
 .site-hours-status--open {
   background: #ecf3ec;
   color: #216e1f;   /* USWDS success-darker: 5.6:1 on this background (WCAG AA needs 4.5:1) */
