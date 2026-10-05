@@ -51,10 +51,12 @@ body {
   flex: none;
 }
 /* The emergency button sits inside USWDS's secondary nav list, whose own link rule
-   (.usa-nav__secondary-item a, colour #71767a) beat .usa-button's white and painted grey text
-   on the red button - 1.0:1, the same luminance as its background, so the word "Emergency" was
-   effectively invisible on the live site. Lighthouse scored accessibility 100 throughout and
-   never flagged it.
+   (.usa-nav__secondary-links a, specificity 0,1,1, colour #71767a) beat .usa-button--secondary
+   (0,1,0) and painted grey text on the red button - 1.0:1, the same luminance as its background,
+   so the word "Emergency" was effectively invisible on the live site. Lighthouse scored
+   accessibility 100 throughout: axe did measure it, but files an exactly-1:1 ratio as
+   "incomplete" (possibly deliberately hidden text) rather than as a violation, and Lighthouse
+   only scores violations. Re-run against the pre-fix build on 2026-10-04 to confirm.
    The fix restores white, and moves the background to the darker red the emergency summary box
    already uses: 6.98:1 rather than the 4.61:1 white-on-#d83933 would have given, and one red
    for every emergency affordance on the site instead of two. */
