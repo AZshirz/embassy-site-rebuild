@@ -29,7 +29,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Every check in ci.yml - the HTML audit on all 15 pages, Lighthouse on all 14 indexable pages
+  # plus a throttled phone with a layout-shift budget, the API tests and the container boot - run
+  # against the same /api build this workflow ships. Until October 2026 the deploy ran only the HTML
+  # audit, so a contrast, layout-shift or API regression could still reach AWS.
+  ci:
+    uses: ./.github/workflows/ci.yml
+    with:
+      public_api_url: /api
+
   deploy:
+    needs: ci
     runs-on: ubuntu-latest
     env:
       STACK_NAME: embassy-app
