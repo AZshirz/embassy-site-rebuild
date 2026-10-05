@@ -232,11 +232,12 @@ which has **no roles** (since 2026-10-04; it used the default compute account be
 role can only write its own logs. Neither API calls any cloud service, so do not grant either one
 anything - logs reach Cloud Logging and CloudWatch without it.
 
-**GCP has no spending cap any more.** On 2026-10-04 every Cloud Run route returned 503 in ~85 ms -
+**GCP has a $6 spending cap, and hitting it takes the API down.** On 2026-10-04 every Cloud Run route returned 503 in ~85 ms -
 the front end refusing, not a cold start - until the owner removed a GCP spending limit. The site
 itself kept working, which is the design: search and Ask showed "temporarily unavailable" while the
-advisory strip and all four emergency numbers still rendered. With the limit gone, nothing stops
-GCP charges except min 0 / max 1 instances and budget *alerts* (alerts notify; they do not cap).
+advisory strip and all four emergency numbers still rendered. On 2026-10-05 the owner set a new cap
+of **$6**. So if Cloud Run's API suddenly returns an instant 503 everywhere, check Billing first -
+that is what it looked like last time. Find and stop whatever is spending rather than raising the cap.
 Check Billing → Reports before claiming "$0" anywhere, and keep an Artifact Registry cleanup policy
 so old container images do not accumulate storage.
 
@@ -284,5 +285,5 @@ cd site; npm install; npm run dev          # http://localhost:4321
 cd site; npm run build; npx astro preview  # then, from the repo root:
 python tools/audit.py --gate
 node tools/lighthouse-gate.mjs http://localhost:4321/
-cd api; python -m pytest -q                # 21 tests, no network
+cd api; python -m pytest -q                # 29 tests, no network
 ```
