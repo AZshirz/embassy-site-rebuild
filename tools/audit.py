@@ -79,8 +79,13 @@ def referenced_asset_size(html_path: Path, soup: BeautifulSoup, site_root: Path)
     for tag, attr in (("link", "href"), ("script", "src"), ("img", "src")):
         for el in soup.find_all(tag):
             v = el.get(attr)
-            if v and not urlparse(v).netloc and Path(v).suffix.lower() in ASSET_EXT:
-                refs.add(v)
+            # Judge and resolve by the URL's path only. Since the ?v=<hash> cache-buster was added,
+            # Path("/css/site.css?v=f25fdb49").suffix is ".css?v=f25fdb49", so every stylesheet and
+            # script silently dropped out of this count - home "assets" fell from 848 KB to 242 KB in
+            # the commit that added it (537727b) while nothing actually shrank.
+            path = urlparse(v).path if v else ""
+            if v and not urlparse(v).netloc and Path(path).suffix.lower() in ASSET_EXT:
+                refs.add(path)
     total, count = 0, 0
     for ref in refs:
         p = site_root / ref.lstrip("/") if ref.startswith("/") else html_path.parent / ref
