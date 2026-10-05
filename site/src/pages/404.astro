@@ -1,0 +1,31 @@
+---
+// Served for any URL that does not exist, on both deployments. Cloudflare picks up dist/404.html
+// on its own; on AWS, CloudFront maps S3's 403 for a missing object to this page with a real 404
+// status (see aws/cloudformation/stack.yml). Before this page existed AWS answered a mistyped URL
+// with raw S3 XML, and Cloudflare with Astro's unstyled default.
+// There is one 404 page for both languages, so it says it in both.
+import Base from '../layouts/Base.astro';
+import PageHeading from '../components/PageHeading.astro';
+import { ui } from '../data/content';
+
+const en = ui.en.notFound;
+const az = ui.az.notFound;
+---
+<Base lang="en" title={en.title} description={en.text} path="/404/" noindex>
+  <PageHeading title={en.title} lead={en.text} />
+  <div class="grid-container padding-bottom-5">
+    <ul class="usa-button-group">
+      <li class="usa-button-group__item"><a class="usa-button" href="/">{en.home}</a></li>
+      <li class="usa-button-group__item"><a class="usa-button usa-button--outline" href={ui.en.search.href}>{en.search}</a></li>
+    </ul>
+
+    <div lang="az" class="margin-top-5">
+      <h2>{az.title}</h2>
+      <p>{az.text}</p>
+      <ul class="usa-button-group">
+        <li class="usa-button-group__item"><a class="usa-button" href="/az/">{az.home}</a></li>
+        <li class="usa-button-group__item"><a class="usa-button usa-button--outline" href={ui.az.search.href}>{az.search}</a></li>
+      </ul>
+    </div>
+  </div>
+</Base>

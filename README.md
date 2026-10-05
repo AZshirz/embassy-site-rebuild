@@ -50,12 +50,12 @@ Everything below was measured, not eyeballed — see `tools/audit.py` and the Li
 | 6 failing Lighthouse a11y audits (contrast, unnamed links, tab order, tap-target size, list markup, label mismatch) | WCAG 2.1 AA failures | 0 failing audits |
 
 Kept from the original (parity, not new): bilingual English / Azerbaijani with `hreflang` alternates,
-the official `.gov` banner, skip link, landmark structure, the travel-advisory and worldwide-caution
+the `.gov` banner component (relabelled "Demonstration only: this is not an official U.S. government website", since it isn't one), skip link, landmark structure, the travel-advisory and worldwide-caution
 alert strips, embassy news, and the "I need…" quick links.
 
 Added: "Open now / Closed now" badge computed in Baku local time, USWDS in-page navigation on long
 pages, Schema.org `GovernmentOffice` structured data (address, hours, phone), print stylesheet,
-HTTP security headers (`public/_headers`) with a `<meta>` CSP fallback.
+HTTP security headers (`site/headers.template`, written to `dist/_headers` at build) with a `<meta>` CSP fallback.
 
 ### Balancing performance and design
 
@@ -148,7 +148,7 @@ is allowed to call exactly one backend origin.
   a missing `alt`, duplicated content, an inline script…), run Lighthouse and fail below
   accessibility 100 / best practices 90 / SEO 90, and run the API tests.
 - `alerts.yml` — daily at 06:17 UTC: read the advisory feed; if Azerbaijan's level or date changed,
-  commit `alerts.json` as `github-actions[bot]` and push, which redeploys the site. Quiet days leave no
+  commit `alerts.json` (authored as the repository owner, so the bot never appears as a contributor) and push, which redeploys the site. Quiet days leave no
   trace in the repository. Only the level and published date count as a change, because the feed serves
   slightly different text and URLs from different cache servers — a lesson learned by watching it.
 
@@ -248,7 +248,7 @@ the control in place, and where to find it.
 | Junk or malicious input (huge strings, wrong types, out-of-range values) | Schema validation: rating 1–5, message ≤ 1,000 chars, page must be a path on this site (`/[A-Za-z0-9/-]*`), email must parse; **unknown fields are rejected**, not ignored | `Feedback` model in `api/main.py` |
 | Oversized request bodies (memory exhaustion) | Requests over 16 KB are refused with 413 **before the body is read**; the largest legitimate submission is ~1.5 KB | `security_headers` middleware |
 | Automated spam | Honeypot field hidden from people (off-screen, `tabindex=-1`, `aria-hidden`) that must stay empty; **5 submissions per IP per hour**, sliding window | `FeedbackPage.astro`, `rate_limited()` |
-| Cross-site request forgery | Not applicable by design, and the design is deliberate: the API uses no cookies or sessions, accepts only `application/json` (a cross-site HTML form cannot send that without a CORS preflight), CORS allows exactly one origin, and the site's CSP `form-action` forbids the browser from posting anywhere else | `CORSMiddleware`, `headers.template` |
+| Cross-site request forgery | Not applicable by design, and the design is deliberate: the API uses no cookies or sessions, accepts only `application/json` (a cross-site HTML form cannot send that without a CORS preflight), CORS allows exactly one origin in production (the local dev server is added only off-cloud), and the site's CSP `form-action` forbids the browser from posting anywhere else | `CORSMiddleware`, `headers.template` |
 | Cross-site scripting via what the API returns | Every value the page renders — search results, feedback confirmation, model answers — is inserted with `textContent`/`createElement`, never `innerHTML`; the CSP allows no inline scripts | `search.js`, `feedback.js`, `ask.js`, CSP |
 | Log injection (a message crafted to look like a separate log record) | Whitespace is collapsed on input and every log record is a single JSON-encoded line, so a message containing newlines and fake JSON stays one record with the real values — there is a test for exactly this | `Feedback.strip_message`, `test_log_injection_is_neutralised` |
 | Wrong page attribution | The "page" field is a dropdown of the site's own pages, pre-selected from the referrer, and the API validates the path anyway | `FeedbackPage.astro` |
@@ -270,8 +270,8 @@ site/              the Astro site
   src/layouts/Base.astro     <head>, banner, header, footer, CSP, structured data
   src/components/            USWDS-based components and the four page templates
   src/pages/                 routes: /, /visas/, /citizen-services/, /education/ and /az/… copies
-  public/css, public/js      site CSS and the one small progressive-enhancement script
-  public/_headers            HTTP security headers for Cloudflare Pages
+  public/css, public/js      site CSS and four small scripts: site.js (Open/Closed badge), search.js, feedback.js, ask.js
+  headers.template           HTTP security headers for Cloudflare, written to dist/_headers at build
   scripts/                   copy-uswds, screenshot, and overflow-measurement helpers
 api/               FastAPI backend (main.py), feed parser (advisories.py), grounded QA (ask.py), tests, Dockerfile
 .github/workflows/ ci.yml (build + accessibility gate + API tests), alerts.yml (daily feed check)

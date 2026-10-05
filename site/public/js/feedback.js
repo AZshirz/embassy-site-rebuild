@@ -4,6 +4,8 @@
 
   var form = document.getElementById('feedback-form');
   if (!form) return;
+  // The button ships disabled so the form cannot be sent without this script; now it can.
+  form.querySelector('button[type="submit"]').disabled = false;
 
   // Pre-select the page the visitor came from (?page= or the referrer, same site only).
   // The <select> only contains the site's own pages, so an unknown value simply leaves the default.

@@ -17,7 +17,13 @@ const pages = ui[lang].primaryNav.map((p) => ({ label: p.label, href: p.href.spl
 <Base lang={lang} title={t.title} description={t.lead} path="/feedback/">
   <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <form class="usa-form usa-form--large" id="feedback-form" method="post" action={`${API_URL}/feedback`} novalidate
+    <!-- The API accepts JSON only - that is what keeps cross-site form posts out (see the README threat
+         model). A plain HTML submit sent form-encoded data and got a raw 422 back, so the form has no
+         action and its button stays disabled until feedback.js can send JSON. A disabled default button
+         also blocks submitting with Enter. The form is NOT hidden: hiding it and revealing it from
+         script made the page jump when it appeared (CLS 0.48, measured 2026-10-04). -->
+    <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
+    <form class="usa-form usa-form--large" id="feedback-form" novalidate
       data-api={API_URL} data-sending={t.sending} data-thanks={t.thanks} data-reference={t.reference}
       data-too-many={t.tooMany} data-error={t.error}>
       <fieldset class="usa-fieldset">
@@ -50,9 +56,8 @@ const pages = ui[lang].primaryNav.map((p) => ({ label: p.label, href: p.href.spl
         <input id="feedback-website" name="website" type="text" tabindex="-1" autocomplete="off" />
       </div>
 
-      <button class="usa-button margin-top-3" type="submit">{t.submit}</button>
+      <button class="usa-button margin-top-3" type="submit" disabled>{t.submit}</button>
       <div id="feedback-status" class="margin-top-2" aria-live="polite"></div>
-      <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
     </form>
   </div>
   <script src={v('/js/feedback.js')} defer is:inline></script>
