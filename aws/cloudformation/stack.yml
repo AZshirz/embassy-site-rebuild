@@ -146,6 +146,8 @@ Resources:
           # sends the header (measured 2026-10-04). CloudFront sets this header itself and overwrote
           # every forged copy.
           CLIENT_IP_HEADER: cloudfront-viewer-address
+          # Refuse anything that did not come through CloudFront (see OriginCustomHeaders below).
+          ORIGIN_VERIFY: !Select [2, !Split ["/", !Ref "AWS::StackId"]]
 
   ApiFunctionUrl:
     Type: AWS::Lambda::Url
