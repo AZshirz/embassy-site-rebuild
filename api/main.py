@@ -15,6 +15,7 @@ Deploy:        Dockerfile in this folder -> Google Cloud Run (see README)
 """
 from __future__ import annotations
 
+import hmac
 import json
 import logging
 import os
@@ -50,13 +51,24 @@ def default_origins(site_url: str, on_cloud: bool) -> str:
 
 
 ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", default_origins(SITE_URL, ON_CLOUD)).split(",") if o.strip()]
-# How many X-Forwarded-For entries OUR infrastructure appends in front of this app (Cloud Run's front
-# end, or CloudFront + the Lambda URL service). Every proxy appends the address it received the
-# request from, so whatever a client typed comes first and what our platform added comes last.
-# Unset means the original behaviour - trust the first entry - kept only until each platform's real
-# count has been measured; see client_ip_of().
+# Where the rate limiter gets a client's address. Measured on 2026-10-04 by sending forged headers
+# from outside and reading back yes/no answers (never addresses):
+#   Cloud Run  appends exactly ONE X-Forwarded-For entry - the real client - after whatever the
+#              client sent. So count one in from the right.
+#   AWS        X-Forwarded-For cannot be trusted in any position: the Lambda URL layer collapses it
+#              to a single value, and when the client sends the header that value is the client's
+#              own. CloudFront-Viewer-Address is reliable instead - CloudFront overwrote every forged
+#              copy - so stack.yml sets CLIENT_IP_HEADER to it.
+#   locally    nothing in front: the socket peer is the client.
+# CLIENT_IP_HEADER is trusted ONLY when configured. Cloud Run passes a client-sent
+# CloudFront-Viewer-Address straight through, so trusting it by default would reopen the bypass there.
+CLIENT_IP_HEADER = os.environ.get("CLIENT_IP_HEADER", "").strip().lower()
 _HOPS = os.environ.get("TRUSTED_PROXY_HOPS", "").strip()
-TRUSTED_PROXY_HOPS: int | None = int(_HOPS) if _HOPS else None
+TRUSTED_PROXY_HOPS = int(_HOPS) if _HOPS else (1 if os.environ.get("K_SERVICE") else 0)
+# AWS only. CloudFront adds this header to every request it forwards to the Lambda; a request without
+# it came straight to the public Function URL - around CloudFront, its security headers, and the one
+# trustworthy client address. Rejected with a 403 in the middleware below.
+ORIGIN_VERIFY = os.environ.get("ORIGIN_VERIFY", "")
 # Interactive docs at /docs and /redoc. Turned off behind CloudFront: Swagger UI loads its script from
 # a CDN, which the site's Content-Security-Policy forbids, and requests /openapi.json at the domain
 # root, which CloudFront sends to S3 - so on AWS the page loaded blank (seen 2026-10-04). The schema
@@ -96,6 +108,8 @@ STARTED = time.time()
 async def security_headers(request: Request, call_next):
     """Reject oversized requests before reading them, and send the same defence-in-depth
     headers the static site sends."""
+    if ORIGIN_VERIFY and not hmac.compare_digest(request.headers.get("x-origin-verify", ""), ORIGIN_VERIFY):
+        return JSONResponse({"detail": "Forbidden."}, status_code=403)
     declared = request.headers.get("content-length")
     if declared and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
         return JSONResponse({"detail": f"Request body too large (limit {MAX_BODY_BYTES} bytes)."}, status_code=413)
@@ -134,32 +148,10 @@ def root():
             "endpoints": ["/health", "/alerts", "/alerts/all", "/search?q=", "POST /feedback"]}
 
 
-# TEMPORARY measurement for the rate limiter. Every value is a count or a yes/no - never an address.
-# Sent from outside with known X-Forwarded-For / CloudFront-Viewer-Address values, these show what
-# each platform does to those headers on the way in, which decides which address can be trusted.
-_DOCUMENTATION_RANGES = ("192.0.2.", "198.51.100.", "203.0.113.")   # RFC 5737: never a real client
-
-
-def proxy_probe(request: Request) -> dict:
-    chain = forwarded_chain(request)
-    last = chain[-1] if chain else ""
-    peer = request.client.host if request.client else ""
-    viewer = request.headers.get("cloudfront-viewer-address", "")
-    viewer_ip = viewer.rsplit(":", 1)[0] if viewer else ""
-    return {
-        "forwarded_for_entries": len(chain),
-        "forwarded_last_is_socket_peer": bool(last) and last == peer,
-        "forwarded_last_is_documentation_address": last.startswith(_DOCUMENTATION_RANGES),
-        "viewer_address_present": bool(viewer),
-        "viewer_address_is_documentation_address": viewer_ip.startswith(_DOCUMENTATION_RANGES),
-        "forwarded_last_equals_viewer_address": bool(last) and last == viewer_ip,
-    }
-
-
 @app.get("/health", tags=["meta"])
-def health(request: Request):
+def health():
     return {"status": "ok", "uptime_seconds": round(time.time() - STARTED), "feed_cached": feed_cache.fresh(),
-            "search_index_cached": index_cache.fresh(), "proxy_probe": proxy_probe(request)}
+            "search_index_cached": index_cache.fresh()}
 
 
 # ---------- alerts ----------
@@ -306,16 +298,17 @@ def client_ip_of(request: Request) -> str:
 
     The original took the FIRST X-Forwarded-For entry. That is whatever the client chose to send, so
     a script could claim a new address on every request and never be limited (shown 2026-10-04:
-    six forged posts in a row, six accepted). Our own proxies append to the END, so counting
-    TRUSTED_PROXY_HOPS in from the right lands on the address our platform actually saw.
-    With no proxy in front (TRUSTED_PROXY_HOPS = 0, or running locally) the socket peer is the client."""
+    six forged posts in a row, six accepted). See CLIENT_IP_HEADER above for what each platform
+    can actually be trusted to say."""
+    if CLIENT_IP_HEADER:
+        value = request.headers.get(CLIENT_IP_HEADER, "")
+        if value:
+            # CloudFront writes "address:port", IPv6 unbracketed - so split on the LAST colon.
+            return value.rsplit(":", 1)[0] if CLIENT_IP_HEADER == "cloudfront-viewer-address" else value
     chain = forwarded_chain(request)
-    peer = request.client.host if request.client else "?"
-    if TRUSTED_PROXY_HOPS is None:                       # legacy behaviour, until measured
-        return chain[0] if chain else peer
     if TRUSTED_PROXY_HOPS > 0 and len(chain) >= TRUSTED_PROXY_HOPS:
         return chain[-TRUSTED_PROXY_HOPS]
-    return peer
+    return request.client.host if request.client else "?"
 
 
 def rate_limited(client_ip: str, hits_by_ip: dict[str, deque] = _feedback_hits, limit: int = FEEDBACK_LIMIT_PER_HOUR) -> bool:
