@@ -27,8 +27,9 @@ whether the API origin is absolute or relative:
 Everything else in `site/` is byte-identical. **Do UI work once, on `main`, then merge into `aws`.**
 Never edit the same UI file separately on both branches.
 
-Expect a small conflict in `Base.astro` on every merge (one CSP line: `API_ORIGIN` vs
-`API_CSP_SOURCE`). Keep the `aws` side when merging into `aws`.
+`Base.astro` conflicts only when an edit lands next to its import of `API_ORIGIN` /
+`API_CSP_SOURCE` or next to the CSP line; edits elsewhere in the file merge cleanly. When it does
+conflict, keep the `aws` side of those lines when merging into `aws`.
 
 ## Content-Security-Policy lives in three places — change all three or one site breaks
 
@@ -84,24 +85,66 @@ Two consequences, both learned the hard way:
   fetched; an unchanged one still comes from cache. This is also the only way to rescue browsers
   that already hold a poisoned copy.
 
+## Client addresses and the edge: measured, not assumed
+
+The rate limiter needs the visitor's address. What each platform delivers was measured on
+2026-10-04 by sending forged headers from outside and reading back yes/no answers:
+
+| | `X-Forwarded-For` | `CloudFront-Viewer-Address` | Used |
+|---|---|---|---|
+| Cloud Run | client's entries, then exactly **one** appended: the real client | passed through untouched (forgeable) | last XFF entry (`TRUSTED_PROXY_HOPS` defaults to 1 when `K_SERVICE` is set) |
+| AWS | collapsed to **one** value by the Lambda URL layer; the client's own when it sends the header | always present; CloudFront overwrites forged copies | `CLIENT_IP_HEADER=cloudfront-viewer-address` (stack.yml) |
+
+Consequences:
+- **Never trust `X-Forwarded-For` on AWS, in any position.** Counting from the right fixes Cloud Run
+  and does nothing on AWS.
+- **Never trust `CloudFront-Viewer-Address` by default.** On Cloud Run a client can set it.
+- **The Lambda refuses requests without CloudFront's `X-Origin-Verify` header** (`ORIGIN_VERIFY`,
+  the stack's GUID), so the public Function URL cannot be used to skip CloudFront and forge the
+  viewer address. Changing anything like this needs two deploys: first make CloudFront send the
+  new header, then make the Lambda require it. In one deploy the Lambda changes instantly while
+  CloudFront takes minutes, refusing every API call in between.
+
+**CloudFront error pages apply to every behaviour, `/api/*` included.** That is why only **403** is
+mapped to `/404.html`: S3 answers a missing object with 403 (private bucket, no list permission),
+while the API raises real 404s that must stay JSON (`/api/alerts?country=Narnia`) and never raises a
+403 itself. The smoke test asserts both halves. Do not add a 404 mapping.
+
+`API_DOCS=off` on AWS: Swagger UI cannot work behind this CloudFront (CDN script blocked by the CSP,
+`/openapi.json` requested at the root goes to S3). The schema is at `/api/openapi.json`.
+
 ## What the gates do not catch
 
-Both gates passed continuously through two real defects that reached production:
+Both gates passed continuously through three real defects that reached production:
 
-- **Contrast inside a component's own cascade.** The header Emergency button rendered `#71767a` on
-  `#d83933` — a ratio of **1.0:1**, text exactly as bright as its background — because a USWDS nav
-  rule outranked `.usa-button`. Lighthouse reported accessibility **100** on every run.
+- **A contrast ratio of exactly 1:1.** The header Emergency button rendered `#71767a` on `#d83933`
+  because `.usa-nav__secondary-links a` (specificity 0,1,1) outranked `.usa-button--secondary`
+  (0,1,0). Lighthouse reported accessibility **100** on every run, and not by sampling: axe
+  measured the button, but files an exactly-1:1 ratio as `incomplete` (message key `equalRatio` -
+  possibly deliberately hidden text) instead of a violation, and Lighthouse scores only violations.
+  1.5:1 would have failed CI; 1:1 could not.
 - **Anything cache-related.** Automated checks drive a fresh headless browser with an empty cache,
   so they fetch what was just deployed by definition. The stale-stylesheet bug was invisible to
   every check and obvious to anyone who had visited the site before.
+- **Mobile layout shift.** CI runs Lighthouse with the desktop preset and does not gate
+  performance, so mobile CLS crept from 0 (Phase 1) to 0.13-0.25 unseen: the first screen painted
+  in fallback fonts and reflowed when USWDS's arrived. Fixed with font preloads in `Base.astro`.
+  Their URLs must stay exactly the ones the USWDS stylesheet requests - no `v()` - or each font
+  downloads twice. To measure CLS locally, use `--throttling-method=devtools`; on localhost fonts
+  arrive instantly and the shift never appears.
+
+Measure a fix, too. Hiding the feedback form until its script ran - to stop a no-JS 422 - caused a
+CLS of 0.48 of its own, caught only because the page was re-measured. The form now stays visible
+and only its submit button starts disabled.
 
 So: a green gate means no *known* regression, not a correct page. **After deploying, open both
 live sites in a real browser that has visited them before.** The gates cannot do this part.
 
 ## Deploy paths differ in safety — know which branch you are on
 
-- `aws`: `deploy-aws.yml` runs the accessibility gate **before** deploying. A regression stops
-  the deploy. Safe.
+- `aws`: `deploy-aws.yml` runs the HTML audit gate **before** deploying and a smoke test after.
+  It does **not** run Lighthouse or the API tests, so a contrast or API regression would still
+  deploy. Safer than `main`, not safe.
 - `main`: Cloudflare Workers Builds deploys on push, **independently of `ci.yml`**. A red CI does
   *not* block it. A bad commit pushed straight to `main` goes live. Work on a branch and merge.
 
@@ -152,11 +195,23 @@ money is to make the pages call the API far more often, and even then the free a
 orders of magnitude away. The real $0 risk is the **AWS Free Plan account expiry** (6 months,
 then AWS deletes resources) — see `aws/README.md`.
 
+**GCP has no spending cap any more.** On 2026-10-04 every Cloud Run route returned 503 in ~85 ms -
+the front end refusing, not a cold start - until the owner removed a GCP spending limit. The site
+itself kept working, which is the design: search and Ask showed "temporarily unavailable" while the
+advisory strip and all four emergency numbers still rendered. With the limit gone, nothing stops
+GCP charges except min 0 / max 1 instances and budget *alerts* (alerts notify; they do not cap).
+Check Billing → Reports before claiming "$0" anywhere, and keep an Artifact Registry cleanup policy
+so old container images do not accumulate storage.
+
 ## Commit authorship
 
 Author every commit as `Adam Shirzadian <330568160+AZshirz@users.noreply.github.com>`.
-Do **not** add `Co-Authored-By: Claude` trailers. All 49 commits on both remote branches already
-use this single identity; the GitHub contributors API reports exactly one contributor.
+Do **not** add `Co-Authored-By: Claude` trailers. Every commit on both remote branches uses this
+single identity; the GitHub contributors API reports exactly one contributor.
+
+`INTERVIEW_PREP.md` and `STUDY_GUIDE.md` at the repo root are the owner's private interview notes.
+They are ignored through `.git/info/exclude` (local only, deliberately not `.gitignore`) so that
+`git add -A` cannot publish them. Never commit them, and never move them into a tracked path.
 
 `.github/workflows/alerts.yml` also commits under this identity rather than `github-actions[bot]`,
 so the daily advisory job can never become a second contributor.
@@ -173,7 +228,7 @@ site/          Astro + USWDS 3 static site
   src/data/content.ts        ALL text, EN + AZ. Editing copy never touches a template.
   src/layouts/Base.astro     <head>, CSP, banner, header, footer, structured data
   src/components/            USWDS components + the page templates
-  public/css/site.css        284 lines of layout glue on top of USWDS. Small on purpose.
+  public/css/site.css        layout and the Phase 4 design on top of USWDS (~625 lines)
   public/js/                 site.js, search.js, feedback.js, ask.js — no bundler, no framework
 api/           FastAPI: main.py, advisories.py, ask.py, lambda_handler.py (aws only), tests
 tools/         audit.py (--gate), lighthouse-gate.mjs, fetch_alerts.py, optimize_images.py
