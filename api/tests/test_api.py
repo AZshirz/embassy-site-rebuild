@@ -172,6 +172,44 @@ def test_client_address_is_counted_from_the_right(monkeypatch):
     assert main.client_ip_of(_request_with_forwarded_for("6.6.6.6")) == "127.0.0.1"
 
 
+def test_aws_uses_cloudfronts_viewer_address_not_forwarded_for(monkeypatch):
+    """On AWS X-Forwarded-For arrives as one client-controlled value, so it is ignored entirely in
+    favour of CloudFront-Viewer-Address, which CloudFront overwrites (both measured 2026-10-04)."""
+    monkeypatch.setattr(main, "CLIENT_IP_HEADER", "cloudfront-viewer-address")
+    body = {"page": "/", "rating": 5}
+    for i in range(main.FEEDBACK_LIMIT_PER_HOUR):
+        h = {"X-Forwarded-For": f"10.0.0.{i}", "CloudFront-Viewer-Address": "203.0.113.7:51234"}
+        assert client.post("/feedback", json=body, headers=h).status_code == 201
+    h = {"X-Forwarded-For": "10.9.9.9", "CloudFront-Viewer-Address": "203.0.113.7:60001"}   # new port, same visitor
+    assert client.post("/feedback", json=body, headers=h).status_code == 429
+
+
+def test_viewer_address_ipv6_keeps_the_address_and_drops_the_port(monkeypatch):
+    monkeypatch.setattr(main, "CLIENT_IP_HEADER", "cloudfront-viewer-address")
+    req = _request_with_forwarded_for("6.6.6.6")
+    req.scope["headers"].append((b"cloudfront-viewer-address", b"2001:db8::7:443"))
+    assert main.client_ip_of(req) == "2001:db8::7"
+
+
+def test_viewer_address_is_not_trusted_unless_configured(monkeypatch):
+    """Cloud Run passes a client-sent CloudFront-Viewer-Address straight through, so it must only be
+    believed where our own edge sets it."""
+    monkeypatch.setattr(main, "CLIENT_IP_HEADER", "")
+    monkeypatch.setattr(main, "TRUSTED_PROXY_HOPS", 1)
+    req = _request_with_forwarded_for("6.6.6.6, 203.0.113.7")
+    req.scope["headers"].append((b"cloudfront-viewer-address", b"198.51.100.1:443"))
+    assert main.client_ip_of(req) == "203.0.113.7"
+
+
+def test_requests_that_bypass_cloudfront_are_refused(monkeypatch):
+    """With ORIGIN_VERIFY set (AWS), only requests carrying CloudFront's header get through, so the
+    public Function URL cannot be used to skip CloudFront and forge the viewer address."""
+    monkeypatch.setattr(main, "ORIGIN_VERIFY", "expected-secret")
+    assert client.get("/health").status_code == 403
+    assert client.get("/health", headers={"X-Origin-Verify": "wrong"}).status_code == 403
+    assert client.get("/health", headers={"X-Origin-Verify": "expected-secret"}).status_code == 200
+
+
 def test_production_cors_does_not_include_the_dev_server():
     assert main.default_origins("https://site.example", on_cloud=True) == "https://site.example"
     assert "http://localhost:4321" in main.default_origins("https://site.example", on_cloud=False)
