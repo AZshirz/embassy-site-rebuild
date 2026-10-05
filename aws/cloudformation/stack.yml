@@ -141,6 +141,11 @@ Resources:
           # the CSP forbids and asks for /openapi.json at the domain root, which goes to S3. The
           # schema is still served, at /api/openapi.json.
           API_DOCS: "off"
+          # The client address for rate limiting. X-Forwarded-For cannot be trusted here: the Lambda
+          # URL layer collapses it to one value, and that value is the client's own when the client
+          # sends the header (measured 2026-10-04). CloudFront sets this header itself and overwrote
+          # every forged copy.
+          CLIENT_IP_HEADER: cloudfront-viewer-address
 
   ApiFunctionUrl:
     Type: AWS::Lambda::Url
@@ -277,6 +282,14 @@ Resources:
           - Id: api-lambda
             # Fn::Select strips "https://" and the trailing "/" from the function URL.
             DomainName: !Select [2, !Split ["/", !GetAtt ApiFunctionUrl.FunctionUrl]]
+            # Proof a request came through CloudFront. The Lambda refuses anything without it
+            # (ORIGIN_VERIFY), so the public Function URL cannot be used to skip CloudFront and forge
+            # the viewer address. The value is this stack's own GUID: unguessable from outside, in no
+            # public log, and free. A production system would keep it in Secrets Manager and rotate it
+            # - at about $0.40 a month, which is why it is not done here.
+            OriginCustomHeaders:
+              - HeaderName: X-Origin-Verify
+                HeaderValue: !Select [2, !Split ["/", !Ref "AWS::StackId"]]
             CustomOriginConfig:
               OriginProtocolPolicy: https-only
               OriginSSLProtocols: [TLSv1.2]
