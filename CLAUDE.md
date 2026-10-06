@@ -233,8 +233,9 @@ node scripts/compare.mjs live redesign      # open the path it prints
 ## Cost: $0, and why it stays that way
 
 Guardrails are in the templates, not in anyone's discipline: CloudWatch `RetentionInDays: 7`,
-S3 lifecycle expiry on Lambda zips, `PriceClass_100`, Lambda concurrency cap, Cloud Run min 0 /
-max 1, no NAT/VPC/API Gateway.
+S3 lifecycle expiry on Lambda zips, `PriceClass_100`, Cloud Run min 0 / max 1, no NAT/VPC/API
+Gateway. The Lambda concurrency cap (`MaxConcurrency`) exists but is **off** unless the repository
+variable `AWS_MAX_CONCURRENCY` is set: this account's quota is too small to reserve any.
 
 UI/UX work is cost-neutral by construction — static assets on free tiers. The only way to spend
 money is to make the pages call the API far more often, and even then the free allowances are

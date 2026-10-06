@@ -17,7 +17,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
 ---
 <Base lang={lang} title={t.title} description={t.heroText} path="/">
   <section class="site-hero site-hero--photo" aria-labelledby="hero-heading">
-    <!-- One responsive photo: the browser picks the 800px or 1600px file. fetchpriority=high because it is the LCP element. -->
+    {/* fetchpriority=high because this photo is the LCP element. */}
     <img class="site-hero__img" src={`${hero.base}-${hero.widths[0]}.webp`} srcset={heroSrcset}
       sizes="100vw" width={hero.width} height={hero.height} alt={t.heroAlt} fetchpriority="high" decoding="async" />
     <div class="site-hero__overlay">
@@ -86,10 +86,7 @@ const dateFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az-AZ', { yea
   <section class="site-section site-section--soft" id="contact" aria-labelledby="contact-heading">
     <div class="grid-container">
       <h2 id="contact-heading">{t.contactTitle}</h2>
-      <!-- Three columns, not two. With address+map+phone+fax+social stacked in one half and a
-           seven-row table in the other, the table ran out first and left a column of empty space
-           beside the contact details. Splitting the details out fills the row and groups things
-           that belong together. -->
+      {/* Three columns: with two, the hours table ran out first and left a gap next to the contact details. */}
       <div class="grid-row grid-gap-lg">
         <div class="tablet:grid-col-6 desktop:grid-col-5">
           <h3>{t.addressLabel}</h3>

@@ -48,10 +48,10 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Read the feed and update alerts.json if needed
+      - name: Check the State Department feed
         run: python tools/fetch_alerts.py
 
-      - name: Commit, prove it on a side branch, then publish to main
+      - name: Test the update, then push it to main
         env:
           GH_TOKEN: ${{ github.token }}
           REHEARSE: ${{ inputs.rehearse }}

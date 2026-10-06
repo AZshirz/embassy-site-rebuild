@@ -53,7 +53,7 @@ jobs:
         env:
           PUBLIC_API_URL: ${{ inputs.public_api_url || vars.PUBLIC_API_URL || 'http://localhost:8000' }}
 
-      - name: HTML structure audit (fails on regressions)
+      - name: HTML audit
         working-directory: .
         run: |
           pip install --quiet beautifulsoup4 lxml
@@ -64,7 +64,7 @@ jobs:
       # page down 13px on desktop (CLS 0.13 on Citizen Services) in October 2026.
       # The 404 page is left out on purpose: it is noindex, so it correctly fails the SEO score.
       # Its structure is still covered by the HTML audit above.
-      - name: Lighthouse gate, desktop, every page (a11y 100, best practices and SEO >= 90, CLS <= 0.1)
+      - name: Lighthouse, desktop, every page
         working-directory: .
         run: |
           (cd site && npx astro preview --port 4321 &)
@@ -77,13 +77,13 @@ jobs:
       # A phone on a really slow network. Lighthouse's default simulated throttling replays a fast
       # local load, in which the fonts arrive instantly - so the font reflow that took mobile CLS from
       # 0 to 0.25 never appeared. This is the check that would have caught it.
-      - name: Lighthouse gate, mobile with real throttling (layout shift <= 0.1)
+      - name: Lighthouse, phone, throttled network
         working-directory: .
         run: |
           B=http://localhost:4321
           node tools/lighthouse-gate.mjs --mobile --max-cls=0.1 $B/ $B/visas/ $B/citizen-services/
 
-      - name: Keep the reports as a build artifact
+      - name: Upload the reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -114,9 +114,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build the image exactly as Cloud Run does
+      - name: Build the image
         run: docker build -t embassy-api api
-      - name: Start it and hit the health endpoints
+      - name: Start it and check it answers
         run: |
           docker run -d --rm -p 8080:8080 --name api embassy-api
           for i in $(seq 1 20); do curl -sf http://localhost:8080/health && break; sleep 1; done

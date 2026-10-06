@@ -12,9 +12,8 @@ const { lang } = Astro.props as { lang: Lang };
 const t = visas[lang];
 ---
 <ContentPage lang={lang} title={t.title} lead={t.lead} description={t.lead} path="/visas/">
-  <!-- Deliberately not a band: this is already a full-width warning alert with its own strong
-       treatment, and nesting it inside a tinted panel muddies both. Being a <div>, it also stays
-       out of the :nth-of-type count that alternates the sections below. -->
+  {/* Not wrapped in a band: it's already a full-width alert. As a div it also stays out of the
+     :nth-of-type count that alternates the section backgrounds below. */}
   <div class="usa-alert usa-alert--warning" id="notices">
     <div class="usa-alert__body">
       <h2 class="usa-alert__heading">{t.noticeTitle}</h2>
@@ -43,8 +42,7 @@ const t = visas[lang];
     </ol>
     <a class="usa-button" href={t.stepsLink.href} rel="noopener">{t.stepsLink.label}</a>
 
-    <!-- The wizard box used to float between two sections with no home. Step 1 of the list above
-         says "use the visa types below or the Visa Wizard", so it belongs with the steps. -->
+    {/* Sits with the steps because step 1 points people to the Visa Wizard. */}
     <div class="usa-summary-box margin-top-4" role="region" aria-labelledby="wizard-heading">
       <div class="usa-summary-box__body">
         <h3 class="usa-summary-box__heading" id="wizard-heading">{t.wizardTitle}</h3>

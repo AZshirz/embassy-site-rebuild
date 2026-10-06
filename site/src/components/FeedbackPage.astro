@@ -17,11 +17,9 @@ const pages = ui[lang].primaryNav.map((p) => ({ label: p.label, href: p.href.spl
 <Base lang={lang} title={t.title} description={t.lead} path="/feedback/">
   <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <!-- The API accepts JSON only - that is what keeps cross-site form posts out (see the README threat
-         model). A plain HTML submit sent form-encoded data and got a raw 422 back, so the form has no
-         action and its button stays disabled until feedback.js can send JSON. A disabled default button
-         also blocks submitting with Enter. The form is NOT hidden: hiding it and revealing it from
-         script made the page jump when it appeared (CLS 0.48, measured 2026-10-04). -->
+    {/* No action, and the button stays disabled until feedback.js can send JSON. The API only takes
+       JSON (that is what stops cross-site form posts), so a plain submit got a 422. Don't hide the
+       form instead: revealing it from script made the page jump. */}
     <noscript><p class="usa-alert usa-alert--info usa-alert--slim"><span class="usa-alert__text">{t.needsJs}</span></p></noscript>
     <form class="usa-form usa-form--large" id="feedback-form" novalidate
       data-api={API_URL} data-sending={t.sending} data-thanks={t.thanks} data-reference={t.reference}
@@ -44,13 +42,12 @@ const pages = ui[lang].primaryNav.map((p) => ({ label: p.label, href: p.href.spl
       <input class="usa-input" id="feedback-email" name="email" type="email" autocomplete="email" />
 
       <label class="usa-label" for="feedback-page">{t.pageLabel}</label>
-      <!-- A fixed list of the site's pages, not free text: the value is pre-selected from the page the
-           visitor came from (feedback.js), and the API rejects anything that isn't a path on this site. -->
+      {/* A fixed list, not free text. feedback.js preselects the page the visitor came from. */}
       <select class="usa-select" id="feedback-page" name="page">
         {pages.map((p) => <option value={p.href}>{p.label}</option>)}
       </select>
 
-      <!-- Honeypot: invisible to people, tempting to bots. The API rejects any submission that fills it. -->
+      {/* Honeypot: hidden from people. The API rejects any submission that fills it in. */}
       <div class="site-honeypot" aria-hidden="true">
         <label for="feedback-website">Website</label>
         <input id="feedback-website" name="website" type="text" tabindex="-1" autocomplete="off" />
