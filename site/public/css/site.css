@@ -425,6 +425,17 @@ body {
   flex-wrap: wrap;
   gap: 0.35rem 0.75rem;
 }
+/* Below the desktop breakpoint USWDS fixes the navbar at 3rem, but the badge wraps under the
+   name there and hung out over the alert strip. Let the bar grow to fit it. */
+@media (max-width: 63.99em) {
+  .site-header .usa-navbar {
+    height: auto;
+    min-height: 3rem;
+  }
+  .site-header .usa-logo {
+    margin-block: 0.5rem;
+  }
+}
 
 /* Reserved but invisible until site.js fills it in (see Header.astro): holds the badge's space so
    revealing it moves nothing, and keeps the placeholder away from screen readers. */
