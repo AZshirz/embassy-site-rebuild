@@ -38,8 +38,6 @@
       message: (data.get('message') || '').toString(),
       website: (data.get('website') || '').toString(),
     };
-    var email = (data.get('email') || '').toString().trim();
-    if (email) payload.email = email;
 
     button.disabled = true;
     var label = button.textContent;

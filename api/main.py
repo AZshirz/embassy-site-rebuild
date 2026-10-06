@@ -28,9 +28,10 @@ from typing import Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import advisories
 import ask as ask_module
@@ -93,6 +94,47 @@ app = FastAPI(
     docs_url="/docs" if API_DOCS else None,
     redoc_url="/redoc" if API_DOCS else None,
 )
+
+
+class BodyTooLarge(HTTPException):
+    # An HTTPException, because FastAPI turns any other error raised while reading a body into a 400.
+    def __init__(self, limit: int):
+        super().__init__(status_code=413, detail=f"Request body too large (limit {limit} bytes).")
+
+
+class BodySizeLimit:
+    """Refuse request bodies over MAX_BODY_BYTES. Checking Content-Length alone is not enough: a
+    chunked request doesn't send one, and on AWS such a request reached the handler in full."""
+
+    def __init__(self, app, limit: int):
+        self.app, self.limit = app, limit
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        declared = dict(scope["headers"]).get(b"content-length", b"")
+        if declared.isdigit() and int(declared) > self.limit:
+            return await self.too_large(scope, receive, send)
+        received = 0
+
+        async def counted_receive():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.limit:
+                    raise BodyTooLarge(self.limit)
+            return message
+
+        await self.app(scope, counted_receive, send)
+
+    async def too_large(self, scope, receive, send):
+        response = JSONResponse({"detail": BodyTooLarge(self.limit).detail}, status_code=413)
+        await response(scope, receive, send)
+
+
+# Innermost, so its 413 still passes through CORS and the security headers below.
+app.add_middleware(BodySizeLimit, limit=MAX_BODY_BYTES)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -106,13 +148,10 @@ STARTED = time.time()
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
-    """Reject oversized requests before reading them, and send the same defence-in-depth
-    headers the static site sends."""
+    """Refuse requests that skipped CloudFront (AWS only), and send the same headers the static
+    site sends."""
     if ORIGIN_VERIFY and not hmac.compare_digest(request.headers.get("x-origin-verify", ""), ORIGIN_VERIFY):
         return JSONResponse({"detail": "Forbidden."}, status_code=403)
-    declared = request.headers.get("content-length")
-    if declared and declared.isdigit() and int(declared) > MAX_BODY_BYTES:
-        return JSONResponse({"detail": f"Request body too large (limit {MAX_BODY_BYTES} bytes)."}, status_code=413)
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
@@ -120,6 +159,14 @@ async def security_headers(request: Request, call_next):
     response.headers.setdefault("Cache-Control", "no-store")
     response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, exc: RequestValidationError):
+    """FastAPI's usual 422, without the "input" field it adds by default, which echoed whatever was
+    sent straight back to the sender."""
+    errors = [{k: e[k] for k in ("type", "loc", "msg") if k in e} for e in exc.errors()]
+    return JSONResponse({"detail": errors}, status_code=422)
 
 
 # ---------- a tiny time-based cache so upstream sites are not hit on every request ----------
@@ -191,7 +238,11 @@ async def get_alert(country: str = Query("Azerbaijan", description="Country name
 @app.get("/alerts/all", tags=["alerts"])
 async def get_all_alerts(level: int | None = Query(None, ge=1, le=4, description="Only this advisory level")):
     """Every country's current advisory level, optionally filtered by level."""
-    items = await load_feed()
+    try:
+        items = await load_feed()
+    except Exception as exc:
+        log.warning(json.dumps({"event": "feed_error", "error": str(exc)}))
+        raise HTTPException(status_code=503, detail="Travel advisory feed is unavailable; try again later.")
     rows = [{k: it[k] for k in ("country_name", "country", "level", "level_name", "published", "link")}
             for it in items if it["level"] and (level is None or it["level"] == level)]
     rows.sort(key=lambda r: (-r["level"], r["country_name"]))
@@ -268,7 +319,6 @@ class Feedback(BaseModel):
     page: str = Field(..., max_length=200, description="Path of the page the feedback is about, e.g. /visas/")
     rating: int = Field(..., ge=1, le=5)
     message: str = Field("", max_length=1000)
-    email: EmailStr | None = None
     website: str = Field("", max_length=0, description="Honeypot: must stay empty (bots fill it in)")
 
     @field_validator("page")
@@ -331,7 +381,7 @@ def post_feedback(item: Feedback, request: Request):
         raise HTTPException(status_code=429, detail="Too many submissions; please try again later.")
     feedback_id = uuid.uuid4().hex[:12]
     log.info(json.dumps({"event": "feedback", "id": feedback_id, "page": item.page, "rating": item.rating,
-                         "message": item.message, "has_email": item.email is not None}))
+                         "message": item.message}))
     return {"id": feedback_id, "received": True}
 
 

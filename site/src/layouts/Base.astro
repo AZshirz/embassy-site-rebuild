@@ -2,7 +2,6 @@
 // Base layout: everything shared by every page. Pages only provide <main> content.
 import type { Lang } from '../data/content';
 import { ui, embassy } from '../data/content';
-import GovBanner from '../components/GovBanner.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import SiteAlerts from '../components/SiteAlerts.astro';
@@ -98,15 +97,13 @@ const jsonLd = {
   <body id="top">
     <a class="usa-skipnav" href="#main-content">{t.skip}</a>
 
-    <div class="site-demo-notice" role="note">
+    {/* The only "not official" notice at the top. The USWDS .gov banner used to sit below it, but that
+       banner exists to vouch for official government sites, which this isn't. */}
+    <section class="site-demo-notice" aria-label={t.demoNoticeLabel}>
       <div class="grid-container">
-        {lang === 'en'
-          ? <>Unofficial portfolio demonstration — not affiliated with the U.S. Department of State. The official site is <a href={embassy.originalSite} rel="noopener">az.usembassy.gov</a>.</>
-          : <>Qeyri-rəsmi portfolio nümunəsi — ABŞ Dövlət Departamenti ilə əlaqəsi yoxdur. Rəsmi sayt: <a href={embassy.originalSite} rel="noopener">az.usembassy.gov</a>.</>}
+        {t.demoNotice} <a href={embassy.originalSite}>az.usembassy.gov</a>.
       </div>
-    </div>
-
-    <GovBanner lang={lang} />
+    </section>
     <Header lang={lang} currentPath={currentPath} />
     <SiteAlerts lang={lang} />
 

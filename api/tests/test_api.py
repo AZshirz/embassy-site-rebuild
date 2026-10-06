@@ -104,6 +104,7 @@ def test_alerts_falls_back_to_bundled_file_when_feed_is_down(monkeypatch):
     r = client.get("/alerts")
     assert r.status_code == 200 and r.json()["source"] == "bundled alerts.json"
     assert client.get("/alerts", params={"country": "Cambodia"}).status_code == 503
+    assert client.get("/alerts/all").status_code == 503
 
 
 # ---------- search ----------
@@ -131,7 +132,7 @@ def test_feedback_accepts_a_valid_submission():
 def test_feedback_validation():
     assert client.post("/feedback", json={"page": "/visas/", "rating": 6}).status_code == 422          # rating range
     assert client.post("/feedback", json={"page": "http://evil", "rating": 3}).status_code == 422      # not a site path
-    assert client.post("/feedback", json={"page": "/", "rating": 3, "email": "nope"}).status_code == 422
+    assert client.post("/feedback", json={"page": "/", "rating": 3, "email": "a@b.co"}).status_code == 422  # no email field any more
     assert client.post("/feedback", json={"page": "/", "rating": 3, "website": "spam"}).status_code == 422  # honeypot
 
 
@@ -227,6 +228,19 @@ def test_security_headers_present():
 def test_oversized_body_is_rejected_before_parsing():
     big = {"page": "/", "rating": 5, "message": "x" * 1000, "padding": "y" * 100_000}
     assert client.post("/feedback", json=big).status_code == 413
+
+
+def test_oversized_body_without_a_declared_length_is_rejected_too():
+    # A chunked request sends no Content-Length. On AWS one of these used to reach the handler in full.
+    body = ('{"page": "/", "rating": 5, "message": "' + "x" * 100_000 + '"}').encode()
+    chunks = (body[i:i + 8192] for i in range(0, len(body), 8192))
+    r = client.post("/feedback", content=chunks, headers={"Content-Type": "application/json"})
+    assert r.status_code == 413
+
+
+def test_validation_errors_do_not_echo_the_input():
+    r = client.post("/feedback", json={"page": "/", "rating": 5, "message": "secret " * 200})
+    assert r.status_code == 422 and "secret" not in r.text
 
 
 def test_unknown_fields_are_rejected():
