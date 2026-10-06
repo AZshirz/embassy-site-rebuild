@@ -45,15 +45,15 @@ jobs:
       STACK_NAME: embassy-app
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: site/package-lock.json
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
@@ -138,7 +138,7 @@ jobs:
           echo "artifacts      = '${{ vars.AWS_ARTIFACTS_BUCKET }}'"
 
       - name: Get AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
