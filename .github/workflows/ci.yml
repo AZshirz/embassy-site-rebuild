@@ -5,7 +5,7 @@
 #   api:       run the FastAPI test suite
 #   container: boot the API image exactly as Cloud Run does
 # Cloudflare deploys `main` without waiting for this workflow, so a ruleset on `main` requires these
-# checks to have passed on a commit before it can be pushed there (see CLAUDE.md).
+# checks to have passed on a commit before it can be pushed there.
 
 name: CI
 
@@ -34,15 +34,15 @@ jobs:
       run:
         working-directory: site
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: site/package-lock.json
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
@@ -85,7 +85,7 @@ jobs:
 
       - name: Upload the reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: audit-reports
           path: |
@@ -100,8 +100,8 @@ jobs:
       run:
         working-directory: api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip
@@ -113,7 +113,7 @@ jobs:
     name: API container boots (what Cloud Run runs)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build the image
         run: docker build -t embassy-api api
       - name: Start it and check it answers
