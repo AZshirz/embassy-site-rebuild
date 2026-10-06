@@ -29,7 +29,7 @@ permissions:
 jobs:
   site:
     name: Build site + accessibility gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: site
@@ -68,7 +68,7 @@ jobs:
         working-directory: .
         run: |
           (cd site && npx astro preview --port 4321 &)
-          sleep 5
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:4321/ && break; sleep 1; done
           B=http://localhost:4321
           node tools/lighthouse-gate.mjs --max-cls=0.1 \
             $B/ $B/visas/ $B/citizen-services/ $B/education/ $B/search/ $B/ask/ $B/feedback/ \
@@ -83,6 +83,16 @@ jobs:
           B=http://localhost:4321
           node tools/lighthouse-gate.mjs --mobile --max-cls=0.1 $B/ $B/visas/ $B/citizen-services/
 
+      # When deploy-aws.yml calls this workflow, hand it the exact build that just passed, so AWS
+      # ships what was tested instead of building it again.
+      - name: Keep the build for the AWS deploy
+        if: inputs.public_api_url == '/api'
+        uses: actions/upload-artifact@v6
+        with:
+          name: site-dist
+          path: site/dist
+          retention-days: 1
+
       - name: Upload the reports
         if: always()
         uses: actions/upload-artifact@v6
@@ -95,7 +105,7 @@ jobs:
 
   api:
     name: API tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: api
@@ -111,7 +121,7 @@ jobs:
 
   container:
     name: API container boots (what Cloud Run runs)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - name: Build the image
