@@ -35,6 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import advisories
 import ask as ask_module
+from ask import tokenize
 
 # ---------- configuration (environment variables, with sensible defaults) ----------
 
@@ -257,11 +258,6 @@ async def load_index() -> list[dict]:
         resp = await client.get(f"{SITE_URL}/search-index.json")
         resp.raise_for_status()
     return index_cache.set(resp.json())
-
-
-def tokenize(text: str) -> list[str]:
-    """Lower-case words with a crude plural fold so 'passport' matches 'passports' (and vice versa)."""
-    return [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in re.findall(r"\w+", text.lower())]
 
 
 def score(entry: dict, terms: list[str]) -> int:
