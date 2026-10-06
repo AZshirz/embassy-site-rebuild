@@ -12,8 +12,8 @@ Cloudflare and Google Cloud and once entirely on AWS.
 | **AWS: S3, CloudFront, Lambda** (`aws` branch) | [d19v507gh8thmt.cloudfront.net](https://d19v507gh8thmt.cloudfront.net) | [/api/health](https://d19v507gh8thmt.cloudfront.net/api/health) · [schema](https://d19v507gh8thmt.cloudfront.net/api/openapi.json) |
 
 > **Unofficial portfolio project**, not affiliated with the U.S. Department of State. The site text
-> is U.S. Government work (public domain). The Azerbaijani translation is mine and would need a
-> native speaker's review before real use.
+> is U.S. Government work (public domain). The Azerbaijani translation is mine and has been
+> checked by a native speaker.
 
 ![Home page, desktop](docs/images/home-desktop.png)
 
@@ -330,8 +330,8 @@ The `aws` branch adds `aws/cloudformation/`, `api/lambda_handler.py` and `deploy
 - [x] **Phase 4** (2026-09-24/25): visual design pass and versioned assets
 - [x] **Hardening** (2026-10-04): rate limiting tested on both platforms, gates on every page and on a throttled phone, 404 pages, link previews, CI required before anything reaches `main`
 - [x] **USWDS trim** (2026-10-05): 515 KB stylesheet down to 174 KB
+- [x] Azerbaijani text checked by a native speaker (2026-10-06)
 - [ ] Screen-reader pass with NVDA
-- [ ] Review of the Azerbaijani text by a native speaker
 - [ ] Short demo video of the question box
 
 ## How the original was captured
