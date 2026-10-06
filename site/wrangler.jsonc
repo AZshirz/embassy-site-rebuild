@@ -1,0 +1,12 @@
+// Cloudflare deployment: the built site served as static files, nothing else. Without this file,
+// `wrangler deploy` guesses the setup from the framework and tries to turn the site into a
+// server-rendered app ("astro add cloudflare"), which broke the build after the Astro 7 upgrade.
+{
+  "name": "embassy-site-rebuild",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Unknown URLs get dist/404.html with a real 404 status.
+    "not_found_handling": "404-page"
+  }
+}
