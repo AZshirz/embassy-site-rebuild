@@ -117,8 +117,8 @@ first two budgets are free.
 ### 4. Push
 
 A push to `aws` runs [`deploy-aws.yml`](../.github/workflows/deploy-aws.yml). It first runs the whole
-CI suite (`ci.yml`) against the exact build it's about to ship, and stops there if anything fails.
-Then it packages the Lambda and checks that it imports, deploys the stack, publishes the site to
+CI suite (`ci.yml`) against the `/api` build, stops there if anything fails, and deploys the exact
+files CI tested rather than building them again. Then it packages the Lambda and checks that it imports, deploys the stack, publishes the site to
 S3, clears the CloudFront cache, and smoke-tests the live site: pages, API, the 404 page, the API's
 JSON 404s, and that the stylesheet isn't cached as `immutable`.
 
@@ -144,8 +144,8 @@ project's trust. I hit this: the trust policy was written for the plain form, Gi
 form, and they never matched even though every visible name looked right. The template now
 accepts both.
 
-The deploy workflow has a **"Show the OIDC claims this run presents"** step that prints the
-token's claims (never the token itself). Compare its `sub` line with the role's
+When getting credentials fails, the deploy workflow runs a **"Show the OIDC claims this run
+presents"** step that prints the token's claims (never the token itself). Compare its `sub` line with the role's
 **Trust relationships** tab in IAM. Your numeric IDs come from the GitHub API:
 
 ```bash

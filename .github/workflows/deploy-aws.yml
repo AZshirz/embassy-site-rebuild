@@ -40,39 +40,24 @@ jobs:
 
   deploy:
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       STACK_NAME: embassy-app
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: site/package-lock.json
-
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
-      # The API is served from /api on the same domain, so the site is built with a relative
-      # API path and its Content-Security-Policy needs nothing beyond 'self'.
-      - name: Build the site
-        working-directory: site
-        run: |
-          npm ci
-          npm run build
-        env:
-          PUBLIC_API_URL: /api
-
-      # Accessibility gate: the same check the Cloudflare pipeline runs. A regression here
-      # stops the deploy rather than shipping.
-      - name: Accessibility audit gate
-        run: |
-          pip install --quiet beautifulsoup4 lxml
-          python tools/audit.py --gate
+      # The site exactly as CI built and tested it, with PUBLIC_API_URL=/api (the API is on the
+      # same domain here, so the Content-Security-Policy needs nothing beyond 'self').
+      - name: Get the tested build from CI
+        uses: actions/download-artifact@v7
+        with:
+          name: site-dist
+          path: site/dist
 
       - name: Package the Lambda
         run: |
@@ -80,7 +65,9 @@ jobs:
           rm -rf build/lambda && mkdir -p build/lambda
           # Lambda runs Amazon Linux on x86_64; force matching wheels rather than whatever
           # the runner would build for itself.
-          pip install -r api/requirements.txt \
+          # uvicorn is the container's web server; Lambda calls the app through Mangum instead.
+          grep -v '^uvicorn' api/requirements.txt > build/requirements-lambda.txt
+          pip install -r build/requirements-lambda.txt \
             --target build/lambda \
             --platform manylinux2014_x86_64 \
             --implementation cp \
@@ -91,11 +78,8 @@ jobs:
           cp -r api/data build/lambda/data
           # Bundle the search index so the function needs no network call to answer /search.
           cp site/dist/search-index.json build/lambda/search-index.json
-          # Nothing is pruned from the package. An earlier version deleted uvicorn and the
-          # *.dist-info directories to save ~5 MB on a 24 MB package (the limit is 250 MB
-          # unzipped), and the missing metadata broke the function at import: pydantic[email]
-          # reads importlib.metadata.version("email-validator") and raised PackageNotFoundError.
-          # Not worth trading a working deployment for a few megabytes.
+          # Nothing is deleted from the installed packages: removing *.dist-info once broke the
+          # function at import, because a library read its own version from that metadata.
           (cd build/lambda && zip -qr ../lambda.zip .)
           echo "unzipped: $(du -sh build/lambda | cut -f1), zipped: $(du -h build/lambda.zip | cut -f1)"
 
@@ -112,11 +96,18 @@ jobs:
             public.ecr.aws/lambda/python:3.13 \
             -c "import lambda_handler; print('handler imported:', lambda_handler.handler)"
 
-      # Diagnostic: prints the identity GitHub is actually asserting, so a trust-policy
-      # mismatch can be read off directly instead of guessed at. Prints claims only,
-      # never the token itself.
+      - name: Get AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Runs only if the step above failed: prints the identity GitHub presented (claims only,
+      # never the token), so a trust-policy mismatch can be read off instead of guessed at.
       - name: Show the OIDC claims this run presents
+        if: failure()
         run: |
+          echo "role-to-assume = '${{ vars.AWS_DEPLOY_ROLE }}', region = '${{ env.AWS_REGION }}'"
           python3 - <<'PY'
           import base64, json, os, urllib.request
           url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"] + "&audience=sts.amazonaws.com"
@@ -127,21 +118,9 @@ jobs:
           payload += "=" * (-len(payload) % 4)
           claims = json.loads(base64.urlsafe_b64decode(payload))
           print("The IAM trust policy must match these exactly:")
-          for k in ("sub", "aud", "repository", "repository_owner", "ref", "event_name", "workflow_ref"):
-              print(f"  {k:18} = {claims.get(k)!r}")
+          for k in ("sub", "aud", "repository", "ref", "event_name", "workflow_ref"):
+              print(f"  {k:12} = {claims.get(k)!r}")
           PY
-
-      - name: Show the role being assumed
-        run: |
-          echo "role-to-assume = '${{ vars.AWS_DEPLOY_ROLE }}'"
-          echo "region         = '${{ env.AWS_REGION }}'"
-          echo "artifacts      = '${{ vars.AWS_ARTIFACTS_BUCKET }}'"
-
-      - name: Get AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload the Lambda package
         id: upload
@@ -184,22 +163,10 @@ jobs:
 
       - name: Publish the site to S3
         run: |
-          # NOTHING IN THIS BUILD IS FINGERPRINTED. Astro hashes the assets it processes itself,
-          # but this site has none of those: its CSS, JS, images and vendored USWDS files are all
-          # copied verbatim out of public/, so /css/site.css keeps that name for the life of the
-          # project. An earlier version of this step marked every one of them
-          # "max-age=31536000,immutable" on the assumption that they were fingerprinted. That
-          # pinned the stylesheet in every visitor's browser for a year and told the browser not
-          # to revalidate even on reload. The CloudFront invalidation below clears the CDN; it
-          # cannot reach a browser cache. The result was this site serving new HTML with a stale
-          # stylesheet - white sections, an unreadable Emergency button - while Cloudflare, which
-          # sends must-revalidate, rendered the same commit correctly.
-          #
-          # So: nothing is immutable here. HTML, JSON, CSS and JS revalidate on every request
-          # (cheap 304s, and CloudFront still absorbs the traffic at the edge). Images and USWDS
-          # assets get a day - long enough to be worth caching, short enough to heal itself.
-          # Pages also reference every stylesheet and script with a ?v=<content hash>, so a
-          # changed file gets a new URL regardless. See site/src/data/asset.ts.
+          # Nothing here is fingerprinted (files keep their names), so nothing may be "immutable":
+          # a browser would keep the old copy and no CloudFront invalidation can reach it. That
+          # happened once. HTML, JSON, CSS and JS revalidate every time; images and fonts get a day.
+          # Stylesheets and scripts also carry ?v=<content hash> in their URLs (site/src/data/asset.ts).
           aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
             --delete \
             --exclude "*.html" --exclude "*.json" --exclude "css/*" --exclude "js/*" \
