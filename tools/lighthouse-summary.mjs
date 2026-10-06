@@ -19,7 +19,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith('.report.json')).sort(
 }
 const md = [
   '# Lighthouse summary', '',
-  `Lighthouse ${JSON.parse(readFileSync(`${dir}/${readdirSync(dir).find((f) => f.endsWith('.report.json'))}`, 'utf8')).lighthouseVersion}, mobile emulation, run locally. Full HTML reports are in this folder.`, '',
+  `Lighthouse ${JSON.parse(readFileSync(`${dir}/${readdirSync(dir).find((f) => f.endsWith('.report.json'))}`, 'utf8')).lighthouseVersion}, mobile emulation. The original was measured before the rebuild; the rebuild pages were measured on the live Cloudflare site on 2026-10-06. Full HTML reports are in this folder.`, '',
   '| Page | Performance | Accessibility | Best practices | SEO | Transferred | Requests | LCP | Failing a11y audits |',
   '|---|---:|---:|---:|---:|---:|---:|---:|---|',
   ...rows.map((r) => `| ${r.name} | ${r.perf} | ${r.a11y} | ${r.bp} | ${r.seo} | ${(r.kb / 1024).toFixed(1)} MB | ${r.requests} | ${r.lcp} | ${r.a11yFails.join(', ') || 'none'} |`),

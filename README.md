@@ -19,22 +19,22 @@ Cloudflare and Google Cloud and once entirely on AWS.
 
 ## Results
 
-Lighthouse 12, home page, run against the live sites on 2026-10-05. The original was measured the
-same way (mobile) before the rebuild started.
+Lighthouse 12, home page, run several times against each live site on 2026-10-06. Ranges show the
+spread between runs. The original was measured the same way (mobile) before the rebuild started.
 
 | | Original (mobile) | Rebuild, mobile | Rebuild, desktop |
 |---|---:|---:|---:|
-| Performance | 55 | **100** | **99–100** |
+| Performance | 55 | **96–97** | **98–100** |
 | Accessibility | 85 | **100** | **100** |
 | Best Practices | 71 | **100** | **100** |
 | SEO | 92 | **100** | **100** |
-| Largest Contentful Paint | 36.5 s | **1.7 s** | **0.7–0.8 s** |
+| Largest Contentful Paint | 36.5 s | **2.5–2.7 s** | **0.7–1.1 s** |
 | Layout shift (CLS) | – | **0** | **0** |
 | Bytes transferred | 9.0 MB | **0.25 MB** | **0.44 MB** |
 | Network requests | 133 | **29** | **38** |
 
-Both deployments scored the same to within a point. The Visas page scores 98 on mobile and 100 on
-desktop. Desktop transfers more because the browser picks the larger hero photo.
+Both deployments scored the same to within a point or two. The Visas page scores 98 on mobile.
+The full reports are in [audit/lighthouse/](audit/lighthouse/). Desktop transfers more because the browser picks the larger hero photo.
 
 [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fembassy-site-rebuild.ashirz.workers.dev%2F)
 grades both sites **A+** (Cloudflare checked 2026-09-21, AWS 2026-10-06).
