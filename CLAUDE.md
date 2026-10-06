@@ -103,6 +103,20 @@ Two consequences, both learned the hard way:
   fetched; an unchanged one still comes from cache. This is also the only way to rescue browsers
   that already hold a poisoned copy.
 
+## The USWDS stylesheet is trimmed at build time
+
+Pages load `uswds.trimmed.min.css` (174 KB), not USWDS's full 515 KB `uswds.min.css`.
+`site/scripts/trim-uswds.mjs` writes it as the first step of `npm run build`. On a throttled phone
+this took the home page from 88 to 96 and LCP from 3.5 s to 2.5 s.
+
+It keeps every USWDS component whose `usa-` class appears anywhere in `site/src` or
+`site/public/js`, whole and in every state, because USWDS's JavaScript builds its state classes
+at runtime from a prefix, where no scanner can see them. Utility classes are kept only if they
+appear literally in the source. A new component therefore just works once its markup is in a
+template. A utility class assembled from pieces in JavaScript (`'margin-top-' + n`) would be
+dropped, so write class names out in full. To check a trim, compare screenshots of every page
+and the JS-driven states (open banner, open menu) before and after; they should be identical.
+
 ## Client addresses and the edge: measured, not assumed
 
 The rate limiter needs the visitor's address. What each platform delivers was measured on
@@ -273,6 +287,7 @@ site/          Astro + USWDS 3 static site
   src/components/            USWDS components + the page templates
   public/css/site.css        layout and the Phase 4 design on top of USWDS (~625 lines)
   public/js/                 site.js, search.js, feedback.js, ask.js — no bundler, no framework
+  scripts/trim-uswds.mjs     cuts the USWDS stylesheet down to what the pages use (runs in build)
 api/           FastAPI: main.py, advisories.py, ask.py, lambda_handler.py (aws only), tests
 tools/         audit.py (--gate), lighthouse-gate.mjs, fetch_alerts.py, optimize_images.py
 aws/           CloudFormation templates + AWS deployment README   (aws branch only)
