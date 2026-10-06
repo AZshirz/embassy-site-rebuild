@@ -14,10 +14,13 @@ const t = ui[lang].search;
 <Base lang={lang} title={t.title} description={t.lead} path="/search/">
   <PageHeading title={t.title} lead={t.lead} />
   <div class="grid-container padding-bottom-5">
-    <form class="usa-search usa-search--big" role="search" method="get" action={t.href}>
+    <form class="usa-search usa-search--big" role="search" aria-label={t.title} method="get" action={t.href}>
       <label class="usa-sr-only" for="search-page-field">{t.label}</label>
       <input class="usa-input" id="search-page-field" type="search" name="q" placeholder={t.placeholder} required minlength="2" maxlength="100" />
-      <button class="usa-button" type="submit">{t.button}</button>
+      <button class="usa-button" type="submit">
+        <span class="usa-search__submit-text">{t.button}</span>
+        <img src="/uswds/img/usa-icons-bg/search--white.svg" class="usa-search__submit-icon" alt={t.button} width="24" height="24" />
+      </button>
     </form>
     <p class="margin-top-2"><a class="usa-link" href={ui[lang].ask.href}>{ui[lang].ask.title} →</a></p>
 

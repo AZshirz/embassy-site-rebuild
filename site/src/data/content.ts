@@ -8,6 +8,10 @@
 export type Lang = 'en' | 'az';
 export const LANGS: Lang[] = ['en', 'az'];
 
+/** "2026-04-28" as "April 28, 2026" or "28 aprel 2026". */
+export const formatDate = (iso: string, lang: Lang) =>
+  new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'az', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${iso}T00:00:00Z`));
+
 export interface Link { label: string; href: string; external?: boolean }
 export interface Card { title: string; text: string; link: Link; detail?: string }
 /** `icon` names a file in /uswds/img/usa-icons/ - the icons the design system already ships. */
@@ -21,15 +25,9 @@ export const ui = {
     siteName: 'U.S. Embassy in Azerbaijan',
     siteNameShort: 'U.S. Embassy Baku',
     skip: 'Skip to main content',
-    bannerOfficial: 'Demonstration only: this is not an official U.S. government website',
-    bannerHow: "Here's how you know",
-    bannerDotGov: 'Official websites use .gov',
-    bannerDotGovText: 'A .gov website belongs to an official government organization in the United States.',
-    bannerHttps: 'Secure .gov websites use HTTPS',
-    bannerHttpsText: 'A lock or https:// means you\'ve safely connected to the .gov website. Share sensitive information only on official, secure websites.',
+    demoNotice: 'Unofficial portfolio demonstration — not affiliated with the U.S. Department of State. The official site is',
+    demoNoticeLabel: 'Demonstration notice',
     menu: 'Menu',
-    search: 'Search',
-    language: 'Language',
     langSwitchLabel: 'Azərbaycan dili',
     langSwitchHref: '/az/',
     emergencyButton: 'Emergency',
@@ -50,8 +48,12 @@ export const ui = {
       { label: 'No FEAR Act', href: 'https://www.state.gov/no-fear-act/', external: true },
       { label: 'Accessibility Statement', href: 'https://www.state.gov/accessibility-statement/', external: true },
     ] as Link[],
-    identifierIntro: 'An official website of the',
+    identifierLabel: 'Site identifier',
+    identifierAbout: 'About this site',
+    identifierDomain: 'Unofficial rebuild of az.usembassy.gov',
+    identifierBefore: 'Not an official website of the',
     identifierAgency: 'U.S. Department of State',
+    identifierAfter: '.',
     identifierRequired: 'Looking for U.S. government information and services?',
     identifierVisit: 'Visit USA.gov',
     backToTop: 'Return to top',
@@ -72,7 +74,7 @@ export const ui = {
     },
     search: {
       label: 'Search this site',
-      placeholder: 'Search visas, passports, services…',
+      placeholder: 'Search this site',
       button: 'Search',
       title: 'Search',
       lead: 'Search the pages of this site.',
@@ -111,12 +113,11 @@ export const ui = {
     feedback: {
       link: 'Help us improve',
       title: 'Help us improve this site',
-      lead: 'Tell us how this page worked for you. Feedback is anonymous unless you choose to leave an email address.',
+      lead: 'Tell us how this page worked for you. Feedback is anonymous.',
       ratingLabel: 'How useful was this page?',
       ratings: ['Not useful', 'Slightly useful', 'Somewhat useful', 'Useful', 'Very useful'],
       messageLabel: 'What could be better? (optional)',
       messageHint: 'Up to 1,000 characters. Please do not include passport or case numbers.',
-      emailLabel: 'Email address (optional, if you would like a reply)',
       pageLabel: 'Page this feedback is about',
       submit: 'Send feedback',
       sending: 'Sending…',
@@ -148,15 +149,9 @@ export const ui = {
     siteName: 'ABŞ-ın Azərbaycandakı Səfirliyi',
     siteNameShort: 'ABŞ Səfirliyi, Bakı',
     skip: 'Əsas məzmuna keç',
-    bannerOfficial: 'Yalnız nümayiş üçün: bu, ABŞ hökumətinin rəsmi veb-saytı deyil',
-    bannerHow: 'Bunu necə bilmək olar',
-    bannerDotGov: 'Rəsmi veb-saytlar .gov domenindən istifadə edir',
-    bannerDotGovText: '.gov veb-saytı Amerika Birləşmiş Ştatlarında rəsmi dövlət təşkilatına məxsusdur.',
-    bannerHttps: 'Təhlükəsiz .gov veb-saytları HTTPS istifadə edir',
-    bannerHttpsText: 'Kilid işarəsi və ya https:// .gov veb-saytına təhlükəsiz qoşulduğunuzu bildirir. Həssas məlumatları yalnız rəsmi, təhlükəsiz veb-saytlarda paylaşın.',
+    demoNotice: 'Qeyri-rəsmi portfolio nümunəsi — ABŞ Dövlət Departamenti ilə əlaqəsi yoxdur. Rəsmi sayt:',
+    demoNoticeLabel: 'Nümayiş bildirişi',
     menu: 'Menyu',
-    search: 'Axtarış',
-    language: 'Dil',
     langSwitchLabel: 'English',
     langSwitchHref: '/',
     emergencyButton: 'Təcili',
@@ -177,8 +172,12 @@ export const ui = {
       { label: 'No FEAR Act', href: 'https://www.state.gov/no-fear-act/', external: true },
       { label: 'Əlçatanlıq bəyanatı', href: 'https://www.state.gov/accessibility-statement/', external: true },
     ] as Link[],
-    identifierIntro: 'Rəsmi veb-saytı:',
-    identifierAgency: 'ABŞ Dövlət Departamenti',
+    identifierLabel: 'Sayt identifikatoru',
+    identifierAbout: 'Sayt haqqında',
+    identifierDomain: 'az.usembassy.gov saytının qeyri-rəsmi portfolio versiyası',
+    identifierBefore: '',
+    identifierAgency: 'ABŞ Dövlət Departamentinin',
+    identifierAfter: ' rəsmi veb-saytı deyil.',
     identifierRequired: 'ABŞ hökuməti haqqında məlumat və xidmətlər axtarırsınız?',
     identifierVisit: 'USA.gov saytına keçin',
     backToTop: 'Yuxarı qayıt',
@@ -198,7 +197,7 @@ export const ui = {
     },
     search: {
       label: 'Saytda axtarış',
-      placeholder: 'Viza, pasport, xidmətlər…',
+      placeholder: 'Saytda axtarış',
       button: 'Axtar',
       title: 'Axtarış',
       lead: 'Bu saytın səhifələrində axtarış edin.',
@@ -237,12 +236,11 @@ export const ui = {
     feedback: {
       link: 'Saytı yaxşılaşdırmağa kömək edin',
       title: 'Bu saytı yaxşılaşdırmağa kömək edin',
-      lead: 'Bu səhifənin sizə necə kömək etdiyini bildirin. E-poçt ünvanı qeyd etməsəniz, rəy anonimdir.',
+      lead: 'Bu səhifənin sizə necə kömək etdiyini bildirin. Rəy anonimdir.',
       ratingLabel: 'Bu səhifə nə dərəcədə faydalı oldu?',
       ratings: ['Faydasız', 'Az faydalı', 'Qismən faydalı', 'Faydalı', 'Çox faydalı'],
       messageLabel: 'Nəyi yaxşılaşdırmaq olar? (istəyə bağlı)',
       messageHint: 'Ən çox 1000 simvol. Pasport və ya iş nömrələrini yazmayın.',
-      emailLabel: 'E-poçt ünvanı (istəyə bağlı, cavab istəyirsinizsə)',
       pageLabel: 'Rəyin aid olduğu səhifə',
       submit: 'Rəy göndər',
       sending: 'Göndərilir…',
@@ -334,7 +332,7 @@ export const embassy = {
     { label: 'YouTube', href: 'https://www.youtube.com/user/usembassybaku', icon: 'youtube' },
   ] as SocialLink[],
   originalSite: 'https://az.usembassy.gov/',
-  contentReviewed: '2026-09-20',
+  contentReviewed: '2026-10-06',
   // Photos are official U.S. Government work from the original site, resized by tools/optimize_images.py
   photos: {
     hero: { base: '/img/photos/hero-azeta', widths: [800, 1600], width: 1600, height: 700 },

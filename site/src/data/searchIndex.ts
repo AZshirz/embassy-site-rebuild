@@ -22,7 +22,6 @@ export function buildSearchIndex(): SearchEntry[] {
     const homeUrl = prefix(lang, '/');
     const u = ui[lang];
     add(homeUrl, h.title, h.heroTitle, [h.heroText]);
-    add(`${homeUrl}#needs-heading`, h.title, h.needTitle, h.needs.map((c) => `${c.title}. ${c.text}`));
     add(`${homeUrl}#news-heading`, h.title, h.newsTitle, h.news.map((n) => n.title));
     // Contact details as real text: address, phone, fax, opening hours per day, emergency numbers.
     const hoursText = embassy.hours.map((hh, i) => `${u.hours.days[i]}: ${hh ? `${hh.open}–${hh.close}` : u.hours.closed}`).join('; ');

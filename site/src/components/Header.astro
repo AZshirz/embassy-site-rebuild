@@ -27,6 +27,8 @@ const longerLabel = [t.hours.openNow, t.hours.closedNow].sort((a, b) => b.length
       </div>
       <button type="button" class="usa-menu-btn">{t.menu}</button>
     </div>
+    {/* Phones only. The Emergency button lives in the menu there, so this keeps the number one tap away. */}
+    <a class="site-emergency-call" href={embassy.phoneHref}>{t.emergencyButton}: {embassy.phone}</a>
     <nav aria-label={lang === 'en' ? 'Primary navigation' : 'Əsas naviqasiya'} class="usa-nav">
       <button type="button" class="usa-nav__close">
         <img src="/uswds/img/usa-icons/close.svg" role="img" alt={lang === "en" ? "Close" : "Bağla"} width="24" height="24" />
@@ -42,7 +44,7 @@ const longerLabel = [t.hours.openNow, t.hours.closedNow].sort((a, b) => b.length
         ))}
       </ul>
       <div class="usa-nav__secondary">
-        <form class="usa-search usa-search--small" role="search" method="get" action={t.search.href}>
+        <form class="usa-search usa-search--small" role="search" aria-label={t.search.label} method="get" action={t.search.href}>
           <label class="usa-sr-only" for="header-search">{t.search.label}</label>
           <input class="usa-input" id="header-search" type="search" name="q" placeholder={t.search.placeholder} minlength="2" maxlength="100" />
           <button class="usa-button" type="submit">

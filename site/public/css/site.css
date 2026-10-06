@@ -38,6 +38,29 @@ body {
   padding: 0.35rem 0;
 }
 
+/* Phone-only emergency line in the header (the Emergency button is inside the menu there) */
+.site-emergency-call,
+.site-emergency-call:visited {
+  display: block;
+  background-color: var(--site-red);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  text-decoration: none;
+}
+.site-emergency-call:hover,
+.site-emergency-call:focus {
+  background-color: #8b0000;
+  color: #fff;
+  text-decoration: underline;
+}
+@media (min-width: 64em) {
+  .site-emergency-call {
+    display: none;
+  }
+}
+
 /* Header */
 .site-header {
   border-bottom: 4px solid var(--site-navy);
@@ -536,7 +559,7 @@ body {
 
 /* Print: drop chrome, keep content and phone numbers */
 @media print {
-  .site-demo-notice, .usa-banner, .usa-menu-btn, .usa-nav, .usa-footer__return-to-top,
+  .site-emergency-call, .usa-menu-btn, .usa-nav, .usa-footer__return-to-top,
   .usa-identifier, .usa-in-page-nav {
     display: none !important;
   }

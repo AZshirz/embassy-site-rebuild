@@ -52,12 +52,13 @@ All of this comes from `tools/audit.py` and Lighthouse, run against saved copies
 | **69 of 84 home page images have an empty `alt`** | Most of them are content, which assistive technology then skips | Photos that carry information have written alt text. Icons, and portraits or covers captioned right beside them, use `alt=""` so nothing is read twice |
 | **9 MB and 133 requests** for the home page, 19 inline scripts | Slow on a phone connection, and inline scripts rule out a strict Content-Security-Policy | 0.25 MB, 29 requests, no inline scripts, a CSP that allows only the site itself |
 | **Visa tips are six 1.5 MB JPEGs** with the advice baked into the image and no alt text | A 16.6 MB Visas page, and screen-reader users get none of the tips | The same six tips as real text, each with a 15 KB thumbnail |
-| Phone numbers are plain text | You can't tap to call in an emergency | Every number is a `tel:` link, with an emergency box in the header, footer and Citizen Services |
+| Phone numbers are plain text | You can't tap to call in an emergency | Every number is a `tel:` link. On a phone the emergency number sits in the header, and the full emergency box is in the footer and on Citizen Services |
 | 6 failing Lighthouse accessibility audits (contrast, unnamed links, tab order, tap targets, list markup, label mismatch) | WCAG 2.1 AA failures | None |
 
-Kept from the original: English and Azerbaijani versions with `hreflang` links, the `.gov` banner
-(relabelled "Demonstration only: this is not an official U.S. government website"), the skip link,
-the travel advisory and worldwide caution strips, embassy news and the "I need…" links.
+Kept from the original: English and Azerbaijani versions with `hreflang` links, the skip link, the
+travel advisory and worldwide caution strips, embassy news and the "I need…" links. I left out the
+USWDS `.gov` banner, because it exists to vouch for official government sites. A notice at the top of
+every page and the footer say what this site is instead.
 
 Added: an "Open now / Closed now" badge worked out in Baku time, "On this page" navigation on the
 long pages, Schema.org `GovernmentOffice` data (address, hours, phone), a print stylesheet, a 404
@@ -131,7 +132,7 @@ being up. The API adds what static files can't do:
 |---|---|---|
 | `GET /alerts?country=` | Current travel advisory for a country, live from the State Department feed | Cached for an hour, falls back to the bundled copy if the feed is down. Accepts ISO codes (AZ) as well as the feed's own (AJ) |
 | `GET /alerts/all?level=` | Every country's advisory level | e.g. every Level 4 "Do Not Travel" country |
-| `GET /search?q=&lang=` | Search over the site's pages | 52 entries with links to sections. Title matches count 5, headings 3, body 1 |
+| `GET /search?q=&lang=` | Search over the site's pages | 50 entries with links to sections. Title matches count 5, headings 3, body 1 |
 | `POST /feedback` | The "Help us improve" form | Validation, a honeypot, 5 per hour per visitor, one JSON log line, no database |
 
 The daily job (`alerts.yml`) checks the feed and updates `alerts.json` when Azerbaijan's level or
@@ -149,7 +150,7 @@ uvicorn main:app --reload --port 8000     # then open http://localhost:8000/docs
 
 The site's dev server talks to `http://localhost:8000` by default.
 
-## "Ask the embassy": a question box that can't make things up
+## "Ask the embassy": answers only from the site
 
 You type a question and the assistant answers **only from this site's pages**, says which section
 it used, and says so when the site doesn't cover it. The model (Llama 3.1 8B) runs through Ollama
@@ -158,14 +159,15 @@ the public sites, and the `/ask/` page there explains why.
 
 <!-- DEMO_VIDEO -->
 
-Three layers keep it honest (`api/ask.py`, each covered by tests with a fake model):
+Three layers keep it to the site's own pages (`api/ask.py`, each covered by tests with a fake model):
 
-1. **Retrieval first.** The question is matched against the site's 52 indexed passages. If
+1. **Retrieval first.** The question is matched against the site's search index. If
    nothing matches, it declines straight away and the model is never called.
 2. **A narrow prompt.** The model sees only the matched passages, must end every factual
    sentence with a passage number, and must reply `CANNOT_ANSWER` otherwise. Temperature 0.1.
 3. **A citation check.** An answer that cites none of the passages it was given is thrown away
-   and replaced with a polite decline and links to the closest pages.
+   and replaced with a polite decline and links to the closest pages. This only checks that the
+   answer cites something it was given, not that the source supports every sentence.
 
 Results with the real model (3–5 s per answer):
 
@@ -211,13 +213,13 @@ security work went.
 | Threat | Control | Where |
 |---|---|---|
 | Junk or malicious input | Strict validation: rating 1–5, message up to 1,000 characters, the page must be a path on this site, and unknown fields are rejected rather than ignored | `Feedback` model, `api/main.py` |
-| Oversized requests | Anything over 16 KB is refused before the body is read | `security_headers` middleware |
+| Oversized requests | Anything over 16 KB is refused, whether or not the request says how big it is, and error responses never echo what was sent | `BodySizeLimit` in `api/main.py` |
 | Spam | A hidden honeypot field, and 5 submissions per visitor per hour | `FeedbackPage.astro`, `rate_limited()` |
 | Getting around the rate limit | The visitor's address comes from a source each platform guarantees, which I tested by sending forged headers from outside. On AWS the API also refuses any request that didn't come through CloudFront | `client_ip_of()`, `ORIGIN_VERIFY` |
 | Cross-site request forgery | No cookies or sessions, JSON only (a form on another site can't send that without a preflight), CORS allows exactly one origin, and the CSP's `form-action` limits where the page can post | `CORSMiddleware`, CSP |
 | Cross-site scripting | Everything from the API is inserted with `textContent` or `createElement`, never `innerHTML`, and the CSP allows no inline scripts | `search.js`, `feedback.js`, `ask.js` |
 | Log injection | Whitespace is collapsed and every log record is one JSON line, so a message with newlines and fake JSON stays one record. There's a test for exactly this | `test_log_injection_is_neutralised` |
-| Data exposure | Email is optional, and the log records whether one was given, never the address. No database | `post_feedback()` |
+| Data exposure | The form asks for no name or email, and asks people not to include passport or case numbers. Each submission is one log line; there is no database | `FeedbackPage.astro`, `post_feedback()` |
 | Transport and framing | HTTPS and HSTS everywhere, `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy, and `no-store` on API responses | headers on both platforms |
 | Privileges | The container runs as an unprivileged user. The Cloud Run service account has no roles, and the Lambda can only write its own logs | `api/Dockerfile`, IAM |
 
@@ -238,7 +240,7 @@ CI runs on every push, and nothing reaches either live site without it passing:
 
 ## What went wrong, and what it taught me
 
-Every check was green through most of these. They were caught by looking at the live sites.
+Every check was green through most of these. Most were found by looking at, or measuring, the live sites.
 
 - **The Emergency button had a contrast ratio of exactly 1:1** (grey text on red), because a USWDS
   navigation style outranked the button style. Lighthouse still reported accessibility 100. Its
@@ -265,6 +267,12 @@ Every check was green through most of these. They were caught by looking at the 
 - **A spending limit took the Cloud Run API offline.** The site stayed up and showed
   "temporarily unavailable" for search, while the advisories and emergency numbers kept working.
   That's the reason the static site doesn't depend on the API.
+- **I fixed the "official website" wording in one place and missed another.** After relabelling
+  the banner at the top, the footer still said "An official website of the U.S. Department of
+  State" for two more days, until a full review read every page from top to bottom.
+- **A size limit that only checked what a request claimed.** The API refused bodies over 16 KB by
+  reading the declared length. A request that doesn't declare one got through in full on AWS,
+  and the error even echoed it back. It now counts the bytes as they arrive.
 - **The advisory feed returns slightly different text from different cache servers**, so the daily
   job kept seeing "changes" that weren't real. It now compares only the level and the date.
 
@@ -307,7 +315,7 @@ Git Bash.
 Source/            saved copies of the original pages (the audit's input)
 site/              the Astro site
   src/data/content.ts        all text, English and Azerbaijani
-  src/layouts/Base.astro     <head>, CSP, banner, header, footer, structured data
+  src/layouts/Base.astro     <head>, CSP, notice, header, footer, structured data
   src/components/            USWDS components and the page templates
   public/css, public/js      the site's CSS and four small scripts, no bundler
   headers.template           security headers for Cloudflare

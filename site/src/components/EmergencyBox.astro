@@ -2,11 +2,14 @@
 // Emergency contact summary. Phone numbers are real tel: links so they work on a phone.
 import type { Lang } from '../data/content';
 import { ui, embassy } from '../data/content';
-const { lang, headingLevel = 'h2', id = 'emergency-heading' } = Astro.props as { lang: Lang; headingLevel?: 'h2' | 'h3'; id?: string };
+// `landmark` is off in the footer: the footer is already a landmark, and a second region with the same
+// name on Citizen Services made the two indistinguishable to screen-reader users.
+const { lang, headingLevel = 'h2', id = 'emergency-heading', landmark = true } =
+  Astro.props as { lang: Lang; headingLevel?: 'h2' | 'h3'; id?: string; landmark?: boolean };
 const t = ui[lang].emergency;
 const Heading = headingLevel;
 ---
-<div class="usa-summary-box site-emergency" role="region" aria-labelledby={id}>
+<div class="usa-summary-box site-emergency" role={landmark ? 'region' : undefined} aria-labelledby={landmark ? id : undefined}>
   <div class="usa-summary-box__body">
     <Heading class="usa-summary-box__heading" id={id}>{t.title}</Heading>
     <div class="usa-summary-box__text">
