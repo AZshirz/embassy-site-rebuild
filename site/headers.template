@@ -1,6 +1,5 @@
-# HTTP security headers, sent by Cloudflare when the site is deployed there.
-# TEMPLATE: scripts/write-headers.mjs fills in {{API_ORIGIN}} from PUBLIC_API_URL and writes dist/_headers after each build.
-# (GitHub Pages does not support custom headers; the <meta> CSP in the layout is the fallback.)
+# HTTP headers Cloudflare sends. scripts/write-headers.mjs fills in {{API_ORIGIN}} from PUBLIC_API_URL
+# and writes dist/_headers after each build.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' {{API_ORIGIN}}; object-src 'none'; base-uri 'self'; form-action 'self' {{API_ORIGIN}}; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
@@ -9,3 +8,12 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cross-Origin-Opener-Policy: same-origin
+
+# Photos, icons and fonts can be reused for a day, as on AWS. Not immutable: these files keep
+# their names when they change, so a browser must still check back eventually.
+/img/*
+  Cache-Control: public, max-age=86400
+/uswds/img/*
+  Cache-Control: public, max-age=86400
+/uswds/fonts/*
+  Cache-Control: public, max-age=86400

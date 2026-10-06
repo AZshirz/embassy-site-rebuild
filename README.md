@@ -15,7 +15,7 @@ Cloudflare and Google Cloud and once entirely on AWS.
 > is U.S. Government work (public domain). The Azerbaijani translation is mine and has been
 > checked by a native speaker.
 
-![Home page, desktop](docs/images/home-desktop.png)
+![Home page, desktop](docs/images/home-desktop.webp)
 
 ## Results
 
@@ -72,8 +72,8 @@ Only official U.S. Government photos are reused. The original hero image was cre
 agency, so I didn't use it.
 
 <p>
-<img src="docs/images/home-phone.png" width="300" alt="Home page on a phone, Azerbaijani version">
-<img src="docs/images/visas-desktop.png" width="700" alt="Visas page on desktop with the On this page navigation">
+<img src="docs/images/home-phone.webp" width="300" alt="Home page on a phone, Azerbaijani version">
+<img src="docs/images/visas-desktop.webp" width="700" alt="Visas page on desktop with the On this page navigation">
 </p>
 
 ## One app, two clouds
@@ -110,7 +110,8 @@ original rather than two copies competing with each other.
 | Checks | `tools/audit.py`, Lighthouse, GitHub Actions | Every push is checked; see [Quality gates](#quality-gates) |
 
 The USWDS stylesheet is 515 KB, and the site uses about a third of it. A build step
-(`site/scripts/trim-uswds.mjs`) writes a 174 KB copy that keeps every component the pages use. That
+(`site/scripts/trim-uswds.mjs`) writes a 167 KB copy that keeps every component the pages use, and
+another removes the USWDS files no page refers to, so each deploy publishes 59 of them, not 2,600. That
 took the home page's mobile score from 88 to 96 in a throttled local run. I compared screenshots of
 all 15 pages, plus the open menu and banner, before and after: they were identical.
 
@@ -238,6 +239,9 @@ CI runs on every push, and nothing reaches either live site without it passing:
   fonts arrive instantly, so a font-related shift only shows up when the network is actually slowed.
 - **API tests**, and a check that the container starts the way Cloud Run starts it.
 
+A separate daily job (`uptime.yml`) checks that both live sites and both APIs answer and serve the
+same build, and fails, which sends me an email, if they don't.
+
 ## What went wrong, and what it taught me
 
 Every check was green through most of these. Most were found by looking at, or measuring, the live sites.
@@ -291,7 +295,7 @@ cd site
 npm install            # also copies the USWDS files into public/uswds
 npm run dev            # http://localhost:4321
 
-npm run build          # trims USWDS, builds the site, writes the security headers
+npm run build          # trims USWDS, builds the site, drops unused USWDS files, writes headers
 npx astro preview      # then, from the repository root in another terminal:
 python tools/audit.py --gate
 node tools/lighthouse-gate.mjs http://localhost:4321/
@@ -339,6 +343,7 @@ The `aws` branch adds `aws/cloudformation/`, `api/lambda_handler.py` and `deploy
 - [x] **Hardening** (2026-10-04): rate limiting tested on both platforms, gates on every page and on a throttled phone, 404 pages, link previews, CI required before anything reaches `main`
 - [x] **USWDS trim** (2026-10-05): 515 KB stylesheet down to 174 KB
 - [x] Azerbaijani text checked by a native speaker (2026-10-06)
+- [x] **Review fixes** (2026-10-06): honest footer, phone emergency line, request size limit on AWS, Astro 7, 59 USWDS files published instead of 2,600, daily live check
 - [ ] Screen-reader pass with NVDA
 - [ ] Short demo video of the question box
 

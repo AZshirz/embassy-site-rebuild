@@ -1,6 +1,6 @@
 # Lighthouse summary
 
-Lighthouse 12.8.2, mobile emulation. The original was measured before the rebuild; the rebuild pages were measured on the live Cloudflare site on 2026-10-06. Full HTML reports are in this folder.
+Lighthouse 12.8.2, mobile emulation. The original was measured before the rebuild; the rebuild pages were measured on the live Cloudflare site on 2026-10-06. The full reports are the JSON files in this folder; open one in the Lighthouse viewer (https://googlechrome.github.io/lighthouse/viewer/) to read it.
 
 | Page | Performance | Accessibility | Best practices | SEO | Transferred | Requests | LCP | Failing a11y audits |
 |---|---:|---:|---:|---:|---:|---:|---:|---|

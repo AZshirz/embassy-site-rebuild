@@ -41,9 +41,10 @@ Rules you must follow:
 LANGUAGE_NAMES = {"en": "English", "az": "Azerbaijani"}
 
 
-# ---------- retrieval (same scoring the /search endpoint uses) ----------
+# ---------- retrieval (the tokenizer /search uses too; the scoring is this file's own) ----------
 
 def tokenize(text: str) -> list[str]:
+    """Lower-case words with a crude plural fold so 'passport' matches 'passports' (and vice versa)."""
     return [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in re.findall(r"\w+", text.lower())]
 
 

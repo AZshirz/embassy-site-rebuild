@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/trim-uswds.mjs && astro build && node scripts/write-headers.mjs",
+    "build": "node scripts/trim-uswds.mjs && astro build && node scripts/prune-uswds.mjs && node scripts/write-headers.mjs",
     "preview": "astro preview",
     "postinstall": "node scripts/copy-uswds.mjs"
   },
   "dependencies": {
     "@uswds/uswds": "^3.13.0",
-    "astro": "^5.0.0",
-    "purgecss": "^7.0.2"
+    "astro": "^7.3.6",
+    "postcss": "^8.5.29"
   },
   "devDependencies": {
     "puppeteer-core": "^25.11.0"
