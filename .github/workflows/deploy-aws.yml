@@ -1,0 +1,254 @@
+# Deploys the project to AWS: static site to S3 behind CloudFront, API to Lambda. Cloudflare and
+# Cloud Run deploy the same commit on their own; this is the AWS half.
+#
+# Runs on pushes to `main`, which is also the only ref the AWS deploy role trusts
+# (see aws/cloudformation/bootstrap.yml). The daily advisory job starts it by hand after it
+# publishes, because its own pushes can't trigger workflows. No AWS access keys are stored anywhere: GitHub mints a
+# short-lived OIDC token for this workflow run and AWS exchanges it for temporary credentials.
+#
+# Prerequisites, done once by hand (see aws/README.md):
+#   1. deploy bootstrap.yml
+#   2. set the repository variables AWS_DEPLOY_ROLE, AWS_REGION, AWS_ARTIFACTS_BUCKET
+#
+# Optional: AWS_MAX_CONCURRENCY caps simultaneous Lambda executions. It defaults to 0, meaning
+# "do not reserve", because AWS requires a minimum amount of UNreserved concurrency to remain in
+# the account and a new account's total quota is often too small to reserve from at all. On an
+# account with the standard 1000 quota, setting it to 5 restores that ceiling.
+
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write      # required for OIDC; without it no AWS credentials can be obtained
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+
+jobs:
+  # Every check in ci.yml - the HTML audit on all 15 pages, Lighthouse on all 14 indexable pages
+  # plus a throttled phone with a layout-shift budget, the API tests and the container boot - run
+  # against the same /api build this workflow ships. Until October 2026 the deploy ran only the HTML
+  # audit, so a contrast, layout-shift or API regression could still reach AWS.
+  ci:
+    uses: ./.github/workflows/ci.yml
+    with:
+      public_api_url: /api
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-24.04
+    env:
+      STACK_NAME: embassy-app
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      # The site exactly as CI built and tested it, with PUBLIC_API_URL=/api (the API is on the
+      # same domain here, so the Content-Security-Policy needs nothing beyond 'self').
+      - name: Get the tested build from CI
+        uses: actions/download-artifact@v7
+        with:
+          name: site-dist
+          path: site/dist
+
+      - name: Package the Lambda
+        run: |
+          set -euo pipefail
+          rm -rf build/lambda && mkdir -p build/lambda
+          # Lambda runs Amazon Linux on x86_64; force matching wheels rather than whatever
+          # the runner would build for itself.
+          # uvicorn is the container's web server; Lambda calls the app through Mangum instead.
+          grep -v '^uvicorn' api/requirements.txt > build/requirements-lambda.txt
+          pip install -r build/requirements-lambda.txt \
+            --target build/lambda \
+            --platform manylinux2014_x86_64 \
+            --implementation cp \
+            --python-version 3.13 \
+            --only-binary=:all: \
+            --quiet
+          cp api/*.py build/lambda/
+          cp -r api/data build/lambda/data
+          # Bundle the search index so the function needs no network call to answer /search.
+          cp site/dist/search-index.json build/lambda/search-index.json
+          # Nothing is deleted from the installed packages: removing *.dist-info once broke the
+          # function at import, because a library read its own version from that metadata.
+          (cd build/lambda && zip -qr ../lambda.zip .)
+          echo "unzipped: $(du -sh build/lambda | cut -f1), zipped: $(du -h build/lambda.zip | cut -f1)"
+
+      # Import the package inside the real Lambda runtime image before shipping it. A unit test
+      # run against the source tree cannot catch a PACKAGING fault - wrong platform wheels, a
+      # missing file, deleted metadata - because the source tree has none of those problems.
+      # This is the same idea as the container-boot job in ci.yml, which caught a Dockerfile that
+      # omitted a module.
+      - name: Verify the package imports in Lambda's runtime
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint python \
+            -v "$PWD/build/lambda:/var/task:ro" \
+            public.ecr.aws/lambda/python:3.13 \
+            -c "import lambda_handler; print('handler imported:', lambda_handler.handler)"
+
+      - name: Get AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Runs only if the step above failed: prints the identity GitHub presented (claims only,
+      # never the token), so a trust-policy mismatch can be read off instead of guessed at.
+      - name: Show the OIDC claims this run presents
+        if: failure()
+        run: |
+          echo "role-to-assume = '${{ vars.AWS_DEPLOY_ROLE }}', region = '${{ env.AWS_REGION }}'"
+          python3 - <<'PY'
+          import base64, json, os, urllib.request
+          url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"] + "&audience=sts.amazonaws.com"
+          req = urllib.request.Request(url, headers={
+              "Authorization": "bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]})
+          token = json.load(urllib.request.urlopen(req))["value"]
+          payload = token.split(".")[1]
+          payload += "=" * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload))
+          print("The IAM trust policy must match these exactly:")
+          for k in ("sub", "aud", "repository", "ref", "event_name", "workflow_ref"):
+              print(f"  {k:12} = {claims.get(k)!r}")
+          PY
+
+      - name: Upload the Lambda package
+        id: upload
+        run: |
+          KEY="lambda/${GITHUB_SHA}.zip"
+          aws s3 cp build/lambda.zip "s3://${{ vars.AWS_ARTIFACTS_BUCKET }}/${KEY}"
+          echo "key=${KEY}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file aws/cloudformation/stack.yml \
+            --stack-name "$STACK_NAME" \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              ArtifactsBucket=${{ vars.AWS_ARTIFACTS_BUCKET }} \
+              LambdaZipKey=${{ steps.upload.outputs.key }} \
+              MaxConcurrency=${{ vars.AWS_MAX_CONCURRENCY || '0' }}
+
+      - name: Read the stack outputs
+        id: stack
+        run: |
+          get() { aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
+          echo "site_url=$(get SiteUrl)"          >> "$GITHUB_OUTPUT"
+          echo "bucket=$(get SiteBucketName)"     >> "$GITHUB_OUTPUT"
+          echo "distribution=$(get DistributionId)" >> "$GITHUB_OUTPUT"
+
+      # CloudFormation only points Lambda at the zip key on a change; force the code update so a
+      # commit that touches only Python still ships.
+      - name: Update the function code
+        run: |
+          aws lambda update-function-code \
+            --function-name embassy-api \
+            --s3-bucket ${{ vars.AWS_ARTIFACTS_BUCKET }} \
+            --s3-key ${{ steps.upload.outputs.key }} \
+            --publish >/dev/null
+          aws lambda wait function-updated --function-name embassy-api
+
+      - name: Publish the site to S3
+        run: |
+          # Nothing here is fingerprinted (files keep their names), so nothing may be "immutable":
+          # a browser would keep the old copy and no CloudFront invalidation can reach it. That
+          # happened once. HTML, JSON, CSS and JS revalidate every time; images and fonts get a day.
+          # Stylesheets and scripts also carry ?v=<content hash> in their URLs (site/src/data/asset.ts).
+          aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
+            --delete \
+            --exclude "*.html" --exclude "*.json" --exclude "css/*" --exclude "js/*" \
+            --cache-control "public,max-age=86400"
+          aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
+            --delete --exclude "*" \
+            --include "*.html" --include "*.json" --include "css/*" --include "js/*" \
+            --cache-control "public,max-age=0,must-revalidate"
+
+      - name: Invalidate the CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.stack.outputs.distribution }} \
+            --paths "/*" >/dev/null
+
+      # Prove the deployment actually works rather than trusting that it did.
+      - name: Smoke test the live deployment
+        run: |
+          set -euo pipefail
+          URL="${{ steps.stack.outputs.site_url }}"
+          echo "Testing $URL"
+          fail=0
+          # Status check. Writing the body out means a failure shows WHY, not just the code.
+          check() {
+            code=$(curl -s -o /tmp/body -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "$URL$1")
+            if [ "$code" = "200" ]; then
+              echo "  ok    $1"
+            else
+              echo "  FAIL  $1 -> HTTP $code"; head -c 300 /tmp/body; echo; fail=1
+            fi
+          }
+          for path in / /az/ /visas/ /az/visas/ /citizen-services/ /education/ /search-index.json; do
+            check "$path"
+          done
+          check /api/health
+          check /api/alerts
+          check "/api/search?q=passport"
+
+          # Content assertions. A 200 alone does not prove the API answered correctly.
+          # NOTE: these are deliberately NOT written as `curl ... | grep -q x && echo ok`.
+          # Under `set -e`, a failure on the left of && is ignored, so that form reports
+          # success for a broken API - which is exactly how a 403 shipped undetected once.
+          if ! curl -s "$URL/api/health" | grep -q '"status":"ok"'; then
+            echo "  FAIL  /api/health did not report status ok"; fail=1
+          fi
+          if ! curl -s "$URL/api/search?q=passport" | grep -q '"count"'; then
+            echo "  FAIL  /api/search returned no result count"; fail=1
+          fi
+          if ! curl -sI "$URL/" | grep -qi "content-security-policy"; then
+            echo "  FAIL  no Content-Security-Policy header"; fail=1
+          fi
+
+          # A missing page must be the site's own 404 page with a real 404 status. S3 answers a
+          # missing object with a 403 and an "AccessDenied" XML body; CloudFront's error mapping in
+          # stack.yml is what turns that into the 404 page.
+          NF_CODE=$(curl -s -o /tmp/notfound -w '%{http_code}' "$URL/no-such-page/")
+          if [ "$NF_CODE" != "404" ] || ! grep -q "<html" /tmp/notfound; then
+            echo "  FAIL  a missing page returned HTTP $NF_CODE, not the site's 404 page"; fail=1
+          fi
+          # The API's own 404s must still be JSON: the mapping above is only for 403.
+          if ! curl -s "$URL/api/alerts?country=Narnia" | grep -q '"detail"'; then
+            echo "  FAIL  the API's 404 for an unknown country is no longer JSON"; fail=1
+          fi
+
+          # The stylesheet is NOT fingerprinted, so it must never come back immutable: such a
+          # copy outlives every future deploy in a visitor's browser and no invalidation can
+          # reach it. This shipped once and showed as a site stuck on its previous design.
+          CSS_CC=$(curl -sI "$URL/css/site.css" | grep -i "^cache-control")
+          echo "  css cache-control: ${CSS_CC:-<none>}"
+          if echo "$CSS_CC" | grep -qi "immutable"; then
+            echo "  FAIL  /css/site.css is served immutable; deploys cannot reach cached browsers"
+            fail=1
+          fi
+
+          [ "$fail" = "0" ] || { echo "smoke test failed"; exit 1; }
+          echo "all smoke tests passed"
+
+      - name: Summary
+        run: |
+          echo "### Deployed to AWS" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Site: ${{ steps.stack.outputs.site_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "API:  ${{ steps.stack.outputs.site_url }}/api/health" >> "$GITHUB_STEP_SUMMARY"

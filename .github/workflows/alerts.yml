@@ -2,7 +2,7 @@
 #
 # What it does: runs tools/fetch_alerts.py. If Azerbaijan's advisory level or date changed, it
 # commits the update to alerts.json (site copy + API fallback copy) and publishes it to `main`,
-# which redeploys the site, so the live alert strip updates itself.
+# which redeploys both sites, so the live alert strip updates itself on Cloudflare and on AWS.
 #
 # Why publishing takes three steps: `main` is protected by a ruleset that accepts only commits on
 # which CI has already passed, and GitHub Actions cannot be put on a ruleset's bypass list. Pushes
@@ -112,3 +112,6 @@ jobs:
           # CI has passed on this exact commit, so the ruleset on main accepts it.
           git push origin "HEAD:main"
           echo "Published ${SHA} to main."
+          # Cloudflare and Cloud Run deploy from the push. The AWS deploy is a workflow, which a
+          # push made with this token can't start, so start it explicitly.
+          gh workflow run deploy-aws.yml --ref main

@@ -8,8 +8,8 @@ Cloudflare and Google Cloud and once entirely on AWS.
 
 | | Site | API |
 |---|---|---|
-| **Cloudflare + Google Cloud Run** (`main` branch) | [embassy-site-rebuild.ashirz.workers.dev](https://embassy-site-rebuild.ashirz.workers.dev) · [Azərbaycan dili](https://embassy-site-rebuild.ashirz.workers.dev/az/) | [interactive docs](https://embassy-api-394144127807.us-east4.run.app/docs) |
-| **AWS: S3, CloudFront, Lambda** (`aws` branch) | [d19v507gh8thmt.cloudfront.net](https://d19v507gh8thmt.cloudfront.net) | [/api/health](https://d19v507gh8thmt.cloudfront.net/api/health) · [schema](https://d19v507gh8thmt.cloudfront.net/api/openapi.json) |
+| **Cloudflare + Google Cloud Run** | [embassy-site-rebuild.ashirz.workers.dev](https://embassy-site-rebuild.ashirz.workers.dev) · [Azərbaycan dili](https://embassy-site-rebuild.ashirz.workers.dev/az/) | [interactive docs](https://embassy-api-394144127807.us-east4.run.app/docs) |
+| **AWS: S3, CloudFront, Lambda** | [d19v507gh8thmt.cloudfront.net](https://d19v507gh8thmt.cloudfront.net) | [/api/health](https://d19v507gh8thmt.cloudfront.net/api/health) · [schema](https://d19v507gh8thmt.cloudfront.net/api/openapi.json) |
 
 > **Unofficial portfolio project**, not affiliated with the U.S. Department of State. The site text
 > is U.S. Government work (public domain). The Azerbaijani translation is mine and has been
@@ -78,10 +78,9 @@ agency, so I didn't use it.
 
 ## One app, two clouds
 
-The `main` branch deploys to Cloudflare and Google Cloud Run. The `aws` branch deploys the same
-site and API to AWS. The two branches differ only in deployment files and the three small
-site files that decide whether the API lives on another domain or under `/api`. Site changes are
-made on `main` and merged into `aws`.
+Every commit to `main` is deployed twice: to Cloudflare and Google Cloud Run, and to AWS. The code
+is the same; the build only differs in where the site expects the API (`PUBLIC_API_URL` is a full
+address for Cloud Run and `/api` on AWS).
 
 | | Cloudflare + Cloud Run | AWS |
 |---|---|---|
@@ -89,12 +88,12 @@ made on `main` and merged into `aws`.
 | API | Cloud Run container | Lambda (zip) behind CloudFront at `/api` |
 | Site to API | Two domains, so CORS | One domain, so no CORS at all |
 | Security headers | `_headers` file written at build | CloudFront response headers policy |
-| Infrastructure | Set up in the dashboards | CloudFormation, in [`aws/cloudformation/`](https://github.com/AZshirz/embassy-site-rebuild/tree/aws/aws/cloudformation) |
-| Deploy | Cloudflare and Cloud Run build on every push to `main` | GitHub Actions over OIDC, no stored AWS keys |
+| Infrastructure | Set up in the dashboards | CloudFormation, in [`aws/cloudformation/`](aws/cloudformation/) |
+| Deploy | Cloudflare and Cloud Run build each push to `main` themselves | `deploy-aws.yml` on each push to `main`, over OIDC, no stored AWS keys |
 | What stops an untested deploy | A ruleset: a commit can only reach `main` after CI passes on it | The deploy workflow runs the whole CI suite first and waits for it |
 
 AWS setup, cost controls and the problems I ran into are written up in
-[aws/README.md](https://github.com/AZshirz/embassy-site-rebuild/blob/aws/aws/README.md) on the `aws` branch.
+[aws/README.md](aws/README.md).
 
 Both deployments use the Cloudflare address as the canonical URL, so search engines see one
 original rather than two copies competing with each other.
@@ -324,14 +323,15 @@ site/              the Astro site
   public/css, public/js      the site's CSS and four small scripts, no bundler
   headers.template           security headers for Cloudflare
   scripts/                   USWDS copy and trim, screenshots, before/after comparison
-api/               FastAPI app, advisory feed parser, grounded Q&A, tests, Dockerfile
+api/               FastAPI app, advisory feed parser, grounded Q&A, tests, Dockerfile,
+                   lambda_handler.py (the same app on Lambda)
+aws/               CloudFormation templates and the AWS setup guide
 tools/             audit.py, Lighthouse gate, advisory updater, image optimizer
-.github/workflows/ ci.yml (all checks), alerts.yml (daily advisory)
+.github/workflows/ ci.yml (all checks), deploy-aws.yml, alerts.yml (daily advisory),
+                   uptime.yml (daily live check)
 audit/             generated reports
 docs/images/       screenshots for this README
 ```
-
-The `aws` branch adds `aws/cloudformation/`, `api/lambda_handler.py` and `deploy-aws.yml`.
 
 ## Timeline
 
@@ -343,6 +343,7 @@ The `aws` branch adds `aws/cloudformation/`, `api/lambda_handler.py` and `deploy
 - [x] **Hardening** (2026-10-04): rate limiting tested on both platforms, gates on every page and on a throttled phone, 404 pages, link previews, CI required before anything reaches `main`
 - [x] **USWDS trim** (2026-10-05): 515 KB stylesheet down to 174 KB
 - [x] Azerbaijani text checked by a native speaker (2026-10-06)
+- [x] **One branch** (2026-10-07): `main` deploys both clouds; the separate `aws` branch is retired
 - [x] **Review fixes** (2026-10-06): honest footer, phone emergency line, request size limit on AWS, Astro 7, 59 USWDS files published instead of 2,600, daily live check
 - [ ] Screen-reader pass with NVDA
 - [ ] Short demo video of the question box
