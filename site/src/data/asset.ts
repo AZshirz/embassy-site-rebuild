@@ -1,13 +1,6 @@
-// Cache-busting version strings for assets served from public/ at stable paths.
-//
-// Nothing this build produces is fingerprinted. Astro hashes the assets it processes itself, but
-// everything here is copied verbatim out of public/, so /css/site.css keeps that exact name for
-// the life of the project. That is harmless while the server tells browsers to revalidate, and
-// serious when it does not: the AWS deployment shipped these files with
-// `Cache-Control: public,max-age=31536000,immutable`, which pins a stylesheet in every visitor's
-// browser for a year and forbids even a reload from checking for a new one. A CloudFront
-// invalidation clears the CDN, never a browser cache, so the fix has to change the URL.
-//
+// Cache-buster for files Astro doesn't fingerprint (everything in public/ keeps the same name
+// forever). v('/css/site.css') returns '/css/site.css?v=<short content hash>', so a changed file
+// gets a new URL and an unchanged one still comes from cache.
 // Appending a content hash does that: a changed file gets a new URL and is fetched, an unchanged
 // one keeps its URL and is still served from cache. Read at build time, in Node, so there is no
 // runtime cost and no extra request.

@@ -53,23 +53,14 @@ def default_origins(site_url: str, on_cloud: bool) -> str:
 
 
 ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", default_origins(SITE_URL, ON_CLOUD)).split(",") if o.strip()]
-# Where the rate limiter gets a client's address. Measured on 2026-10-04 by sending forged headers
-# from outside and reading back yes/no answers (never addresses):
-#   Cloud Run  appends exactly ONE X-Forwarded-For entry - the real client - after whatever the
-#              client sent. So count one in from the right.
-#   AWS        X-Forwarded-For cannot be trusted in any position: the Lambda URL layer collapses it
-#              to a single value, and when the client sends the header that value is the client's
-#              own. CloudFront-Viewer-Address is reliable instead - CloudFront overwrote every forged
-#              copy - so stack.yml sets CLIENT_IP_HEADER to it.
-#   locally    nothing in front: the socket peer is the client.
-# CLIENT_IP_HEADER is trusted ONLY when configured. Cloud Run passes a client-sent
-# CloudFront-Viewer-Address straight through, so trusting it by default would reopen the bypass there.
+# The visitor's address, for the rate limiter. On AWS it's CloudFront's viewer-address header; on
+# Cloud Run it's the last X-Forwarded-For entry. Trusting either one everywhere would reopen the
+# other platform's bypass; see client_ip_of() and the tests next to it.
 CLIENT_IP_HEADER = os.environ.get("CLIENT_IP_HEADER", "").strip().lower()
 _HOPS = os.environ.get("TRUSTED_PROXY_HOPS", "").strip()
 TRUSTED_PROXY_HOPS = int(_HOPS) if _HOPS else (1 if os.environ.get("K_SERVICE") else 0)
-# AWS only. CloudFront adds this header to every request it forwards to the Lambda; a request without
-# it came straight to the public Function URL - around CloudFront, its security headers, and the one
-# trustworthy client address. Rejected with a 403 in the middleware below.
+# AWS only. CloudFront adds this to every request it forwards; the Lambda refuses anything without
+# it (middleware below), so the public Function URL can't be used to skip CloudFront.
 ORIGIN_VERIFY = os.environ.get("ORIGIN_VERIFY", "")
 # Interactive docs at /docs and /redoc. Turned off behind CloudFront: Swagger UI loads its script from
 # a CDN, which the site's Content-Security-Policy forbids, and requests /openapi.json at the domain

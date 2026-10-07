@@ -1,22 +1,10 @@
-# Daily check of the State Department travel-advisory feed.
+# Daily: check travel.state.gov for an advisory-level change for Azerbaijan and, if there is one,
+# commit alerts.json so both sites redeploy with the new strip.
 #
-# What it does: runs tools/fetch_alerts.py. If Azerbaijan's advisory level or date changed, it
-# commits the update to alerts.json (site copy + API fallback copy) and publishes it to `main`,
-# which redeploys both sites, so the live alert strip updates itself on Cloudflare and on AWS.
-#
-# Why publishing takes three steps: `main` is protected by a ruleset that accepts only commits on
-# which CI has already passed, and GitHub Actions cannot be put on a ruleset's bypass list. Pushes
-# made with this workflow's own token also start no other workflows, so CI would never run on the
-# bot's commit by itself. So the job pushes the commit to a side branch, starts CI there explicitly
-# (workflow_dispatch is the one kind of event that token is allowed to trigger), waits for it, and
-# only then pushes that same tested commit to `main`. If CI fails, main is untouched and this run is
-# red, which emails the owner.
-#
-# What it does NOT do: commit anything when nothing changed (most days). The only trace of a quiet
-# run is this workflow's log, which GitHub deletes after 90 days.
-#
-# "Run workflow" with "rehearse" ticked walks the whole publish path - side branch, CI, wait - and
-# stops before main, so the mechanism can be proven without waiting for the advisory to change.
+# Publishing takes three steps because the ruleset on `main` refuses commits CI hasn't passed on,
+# and this job's own push can't trigger CI. So: push to a side branch, start CI there with
+# workflow_dispatch (the only event this token may trigger), wait, then push the same tested commit
+# to `main`. Tick "rehearse" on a manual run to walk the path without changing anything.
 
 name: Update travel advisory
 

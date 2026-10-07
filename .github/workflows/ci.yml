@@ -1,11 +1,6 @@
-# Runs on every push and pull request, and is also CALLED by deploy-aws.yml so the AWS deploy
-# waits for exactly the same checks. Three independent jobs:
-#   site:      build the site, then fail on any regression - HTML structure on every built page,
-#              Lighthouse on every page (desktop), and layout shift on a throttled phone
-#   api:       run the FastAPI test suite
-#   container: boot the API image exactly as Cloud Run does
-# Cloudflare deploys `main` without waiting for this workflow, so a ruleset on `main` requires these
-# checks to have passed on a commit before it can be pushed there.
+# CI: HTML audit + Lighthouse on every page + a throttled phone, FastAPI tests, container boot.
+# A ruleset on `main` requires these three jobs to have passed before a commit can land there, and
+# deploy-aws.yml calls this workflow so AWS runs the same checks on the build it ships.
 
 name: CI
 
@@ -59,11 +54,8 @@ jobs:
           pip install --quiet beautifulsoup4 lxml
           python tools/audit.py --gate
 
-      # Every page, in both languages - it used to be three. Layout shift is gated too (0.1 is
-      # Google's "good" threshold): widening this check is what found the header badge pushing the
-      # page down 13px on desktop (CLS 0.13 on Citizen Services) in October 2026.
-      # The 404 page is left out on purpose: it is noindex, so it correctly fails the SEO score.
-      # Its structure is still covered by the HTML audit above.
+      # All indexable pages, both languages, with a CLS budget of 0.1 (Google's "good" threshold).
+      # The 404 page is noindex, so it correctly fails SEO; the HTML audit above still covers it.
       - name: Lighthouse, desktop, every page
         working-directory: .
         run: |
@@ -74,9 +66,8 @@ jobs:
             $B/ $B/visas/ $B/citizen-services/ $B/education/ $B/search/ $B/ask/ $B/feedback/ \
             $B/az/ $B/az/visas/ $B/az/citizen-services/ $B/az/education/ $B/az/search/ $B/az/ask/ $B/az/feedback/
 
-      # A phone on a really slow network. Lighthouse's default simulated throttling replays a fast
-      # local load, in which the fonts arrive instantly - so the font reflow that took mobile CLS from
-      # 0 to 0.25 never appeared. This is the check that would have caught it.
+      # Phone with real network throttling. The default simulated throttling misses font reflow,
+      # which took mobile CLS from 0 to 0.25 once with every other check green.
       - name: Lighthouse, phone, throttled network
         working-directory: .
         run: |

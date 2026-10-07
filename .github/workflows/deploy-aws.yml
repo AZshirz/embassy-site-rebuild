@@ -1,19 +1,10 @@
-# Deploys the project to AWS: static site to S3 behind CloudFront, API to Lambda. Cloudflare and
-# Cloud Run deploy the same commit on their own; this is the AWS half.
+# Deploys to AWS: static site to S3 behind CloudFront, API to Lambda. Cloudflare and Cloud Run
+# deploy the same commit on their own; this is the AWS half. GitHub mints a short-lived OIDC token
+# per run; the role trusts only this repo's `main` branch (see aws/cloudformation/bootstrap.yml).
+# alerts.yml starts this workflow by hand after it publishes, because its own push can't trigger it.
 #
-# Runs on pushes to `main`, which is also the only ref the AWS deploy role trusts
-# (see aws/cloudformation/bootstrap.yml). The daily advisory job starts it by hand after it
-# publishes, because its own pushes can't trigger workflows. No AWS access keys are stored anywhere: GitHub mints a
-# short-lived OIDC token for this workflow run and AWS exchanges it for temporary credentials.
-#
-# Prerequisites, done once by hand (see aws/README.md):
-#   1. deploy bootstrap.yml
-#   2. set the repository variables AWS_DEPLOY_ROLE, AWS_REGION, AWS_ARTIFACTS_BUCKET
-#
-# Optional: AWS_MAX_CONCURRENCY caps simultaneous Lambda executions. It defaults to 0, meaning
-# "do not reserve", because AWS requires a minimum amount of UNreserved concurrency to remain in
-# the account and a new account's total quota is often too small to reserve from at all. On an
-# account with the standard 1000 quota, setting it to 5 restores that ceiling.
+# One-time setup is in aws/README.md. AWS_MAX_CONCURRENCY caps simultaneous Lambda executions; it
+# defaults to 0 (unlimited) because new accounts' quotas can be too small to reserve from.
 
 name: Deploy to AWS
 
@@ -165,10 +156,9 @@ jobs:
 
       - name: Publish the site to S3
         run: |
-          # Nothing here is fingerprinted (files keep their names), so nothing may be "immutable":
-          # a browser would keep the old copy and no CloudFront invalidation can reach it. That
-          # happened once. HTML, JSON, CSS and JS revalidate every time; images and fonts get a day.
-          # Stylesheets and scripts also carry ?v=<content hash> in their URLs (site/src/data/asset.ts).
+          # Files keep their names across builds, so nothing may be "immutable" (browsers would keep
+          # the old copy forever, past any CloudFront invalidation). HTML/CSS/JS/JSON revalidate every
+          # time; images and fonts cache for a day. Stylesheets and scripts also carry ?v=<hash>.
           aws s3 sync site/dist "s3://${{ steps.stack.outputs.bucket }}" \
             --delete \
             --exclude "*.html" --exclude "*.json" --exclude "css/*" --exclude "js/*" \
@@ -233,9 +223,8 @@ jobs:
             echo "  FAIL  the API's 404 for an unknown country is no longer JSON"; fail=1
           fi
 
-          # The stylesheet is NOT fingerprinted, so it must never come back immutable: such a
-          # copy outlives every future deploy in a visitor's browser and no invalidation can
-          # reach it. This shipped once and showed as a site stuck on its previous design.
+          # The stylesheet keeps its name across builds. If it ever comes back immutable, a cached
+          # copy would outlive every future deploy; refuse to call the deploy good in that case.
           CSS_CC=$(curl -sI "$URL/css/site.css" | grep -i "^cache-control")
           echo "  css cache-control: ${CSS_CC:-<none>}"
           if echo "$CSS_CC" | grep -qi "immutable"; then
