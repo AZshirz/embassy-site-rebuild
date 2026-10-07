@@ -133,7 +133,8 @@ body {
 .site-hero--photo {
   position: relative;
   padding: 0;
-  min-height: 22rem;
+  /* Taller on wide screens, where the photo scales up: otherwise the headline sits across faces. */
+  min-height: clamp(22rem, 28vw, 32rem);
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -144,7 +145,9 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 30%;
+  /* Faces are in the top fifth of the photo; anchor there so wide, short layouts crop the
+     table at the bottom (under the gradient) instead of the tops of heads. */
+  object-position: center top;
 }
 .site-hero__overlay {
   position: relative;
