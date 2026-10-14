@@ -189,7 +189,7 @@ CI was green through all of these. They were caught by looking at the live sites
 
 Designed to run inside the free tiers, and so far it has. The limits are in configuration, not
 memory: Cloud Run min 0 / max 1, Lambda logs kept 7 days, CloudFront on the cheapest price class,
-no NAT, VPC or API Gateway. Google Cloud has a $6 spending cap. Local runs of the question box use
+no NAT, VPC or API Gateway. Local runs of the question box use
 my own GPU.
 
 ## Layout
