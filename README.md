@@ -11,7 +11,7 @@ commit is deployed twice, on Cloudflare + Google Cloud Run and on AWS.
 | AWS: S3 + CloudFront + Lambda | [d19v507gh8thmt.cloudfront.net](https://d19v507gh8thmt.cloudfront.net) | [/api/health](https://d19v507gh8thmt.cloudfront.net/api/health) · [schema](https://d19v507gh8thmt.cloudfront.net/api/openapi.json) |
 
 > Unofficial portfolio project, not affiliated with the U.S. Department of State. Site text is U.S.
-> Government work (public domain). The Azerbaijani translation is mine, reviewed by a native speaker.
+> Government work (public domain). The Azerbaijani translation was produced with AI and reviewed by a native speaker.
 
 ![Home page, desktop](docs/images/home-desktop.webp)
 
